@@ -1,11 +1,9 @@
 //import liraries
-import React from 'react';
+import React from 'react'
 
-import Routes from './routes';
-import 'react-native-gesture-handler';
+import AppNavigation from './navigation'
+import 'react-native-gesture-handler'
 
-const App = () => {
-    return <Routes />
-};
+const App = () => <AppNavigation />
 
-export default App;
+export default App

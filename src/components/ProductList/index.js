@@ -1,44 +1,48 @@
 //import liraries
-import React, {Component} from 'react';
+import React, {useEffect, useState} from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import api from '../../services/api'
-import Product from './ProductListItem'
+import ProductListItem from './ProductListItem'
 
-export default class ProductList extends Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            products: []
+const ProductList = () => {
+    const [products, setProducts] = useState([])
+    const navigation = useNavigation()
+
+    useEffect(() => {
+        async function loadProducts() {
+            const res = await api.get('/products')
+            setProducts(res.data)
         }
-    }
+        loadProducts()
+    }, [products])
 
-    async componentDidMount() {
-        const res = await api.get('/products')
-        this.setState({
-            products: res.data
-        })
-    }
-
-    render() {
-        return (
-            <View style={styles.container}>
-                {this.state.products.map((item, index) => {
-                    return (
-                        <Product key={index} data={item} />
-                    )
-                })}
-            </View>
-        )
-    }
+    return (
+        <View style={styles.container}>
+        {
+            products.map(
+                (item) =>
+                    <ProductListItem
+                        key={item._id}
+                        data={item}
+                        onPress={() => navigation.navigate('ProductItem', item)}
+                    />
+            )
+        }
+        </View>
+    )
 }
 
 // define your styles
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        width: '100%',
         flexDirection: 'row',
         flexWrap: 'wrap',
         alignItems: 'flex-start'
     },
 });
+
+export default ProductList

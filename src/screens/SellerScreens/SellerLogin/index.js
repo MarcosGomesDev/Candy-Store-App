@@ -5,20 +5,19 @@ import {Formik} from 'formik'
 import * as Yup from 'yup'
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import {isValidObjField, isValidEmail, updateError} from '../../utils/validators'
+import {isValidObjField, isValidEmail, updateError} from '../../../utils/validators'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
-import Colors from '../../styles/Colors'
+import Colors from '../../../styles/Colors'
 
-import FormBase from '../../components/FormBase'
-import FormContainer from '../../components/FormContainer'
-import FormInput from '../../components/FormInput';
-import FormPassword from '../../components/FormPassword'
-import FormButton from '../../components/FormButton'
+import FormBase from '../../../components/FormBase'
+import FormContainer from '../../../components/FormContainer'
+import FormInput from '../../../components/FormInput';
+import FormPassword from '../../../components/FormPassword'
+import FormButton from '../../../components/FormButton'
 
-import api from '../../services/api'
-import { storeData, getData } from '../../utils/storage';
+import api from '../../../services/api'
+import { storeData, getData } from '../../../utils/storage';
 
 const validationSchema = Yup.object({
     email: Yup.string().email('email inválido!').required('email é obrigatório!'),
@@ -26,7 +25,7 @@ const validationSchema = Yup.object({
 })
 
 // create a component
-const Login = ({navigation}) => {
+const SellerLogin = ({navigation}) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [load, setLoad] = useState(false)
 
@@ -63,17 +62,17 @@ const Login = ({navigation}) => {
     const signIn = async (values, formikActions) => {
         try {
             setLoad(true)
-            const res = await api.post('/sign-in/user', {
+            const res = await api.post('/sign-in/seller', {
                 ...values
             })
             if(res.data.err) {
                 Alert.alert('Erro', res.data.err)
             } else {
             const userInfo = {
-                id: res.data.user._id,
-                name: res.data.user.name,
-                email: res.data.user.email,
-                avatar: res.data.user.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
+                id: res.data.seller._id,
+                name: res.data.seller.name,
+                email: res.data.seller.email,
+                avatar: res.data.seller.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
                 token: res.data.token,
             }
 
@@ -147,7 +146,7 @@ const Login = ({navigation}) => {
                             >
                                 <Text style={
                                     {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Entrar como vendedor</Text>
+                                }>Entrar como usuário</Text>
                             </TouchableOpacity>
                         </FormContainer>
                     )
@@ -242,4 +241,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Login;
+export default SellerLogin;

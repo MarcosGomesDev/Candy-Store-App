@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, TouchableOpacity, Text, StyleSheet} from 'react-native';
 
+import Colors from '../../../styles/Colors'
 
 const ActionFooter = ({children}) => {
   return (
@@ -28,8 +29,9 @@ export const ActionSecondaryButton = ({title, onPress}) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(159, 217, 253, 1)',
     paddingVertical: 20,
+    position: 'absolute',
+    bottom: 0
   },
   inner: {
     flexDirection: 'row',
@@ -38,14 +40,14 @@ const styles = StyleSheet.create({
   primaryButton: {
     borderRadius: 150,
     borderWidth: 1,
-    borderColor: 'rgba(118, 92, 174, 1)',
+    borderColor: Colors.primary,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   primaryButtonText: {
     fontSize: 18,
     textAlign: 'center',
-    color: 'rgba(118, 92, 174, 1)',
+    color: Colors.primary,
   },
   secondaryButton: {
     paddingVertical: 10,
@@ -54,7 +56,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 18,
     textAlign: 'center',
-    color: 'rgba(219, 78, 136, 1)',
+    color: Colors.tertiary,
   },
 });
 

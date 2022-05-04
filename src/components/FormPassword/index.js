@@ -3,30 +3,37 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, Text } from 'react-native';
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
+import Colors from '../../styles/Colors'
 
 // create a component
-const FormPassword = (props) => {
-    const {placeholder, label, error} = props;
+const FormPassword = ({label, placeholder, error, onFocus = () => {}, ...props}) => {
     const [secureEntry, setSecureEntry] = useState(true)
+    const [isFocused, setIsFocused] = useState(false)
     return (
-        <>
+        <View style={{width: '99%'}}>
         <View style={styles.container}>
             <Text style={styles.title}>{label}</Text>
             {error ? (
-                <Text style={{color: 'red', fontSize: 16}}>{error}</Text>
-            ): null}
+                <Text style={{color: Colors.danger, fontSize: 16}}>{error}</Text>
+            ): <></>}
         </View>
         <View style={styles.inputContainer}>
             <Icon 
                 name="lock-outline" 
                 size={26}
-                color={'rgba(118, 92, 174, 1)'}
+                color={Colors.primary}
                 style={styles.icon}
             />
             <TextInput 
+                onFocus={() => {
+                    onFocus()
+                    setIsFocused(true)
+                }}
+                onBlur={() => setIsFocused(false)}
                 {...props}
-                placeholder={placeholder} 
-                style={[styles.input, {borderColor: error ? 'red' : 'rgba(118, 92, 174, 1)'}]} 
+                placeholder={placeholder}
+                placeholderTextColor='#dcdcdc'
+                style={[styles.input, {borderColor: error ? Colors.danger : isFocused ? Colors.secondary : Colors.primary}]} 
                 secureTextEntry={secureEntry}
             />
             <TouchableOpacity 
@@ -38,11 +45,11 @@ const FormPassword = (props) => {
                 <Icon 
                     name={secureEntry ? 'visibility' : 'visibility-off'} 
                     size={26}
-                    color={'rgba(118, 92, 174, 1)'}
+                    color={Colors.primary}
                 />
             </TouchableOpacity>
         </View>
-        </>
+        </View>
     );
 };
 
@@ -54,7 +61,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     title: {
-        color: 'rgba(118, 92, 174, 1)',
+        color: Colors.primary,
         fontSize: 16,
         paddingBottom: 10,
         paddingLeft: 10,
@@ -76,7 +83,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         borderWidth: 1,
         borderRadius: 15,
-        color: 'rgba(118, 92, 174, 1)',
+        color: Colors.primary,
     },
     btn: {
         position: 'absolute',

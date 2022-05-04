@@ -1,13 +1,15 @@
 //import liraries
-import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+
+import Colors from '../../styles/Colors'
 
 // create a component
-const FormButton = ({title, submitting, onPress}) => {
-    const backgroundColor = submitting ? 'rgba(118, 92, 174, 0.4)' : 'rgba(118, 92, 174, 1)'
+const FormButton = ({title, onPress}) => {
+    const [load, setLoad] = useState(false)
 
     return (
-        <TouchableOpacity onPress={!submitting ? onPress : null} style={[styles.container, {backgroundColor}]}>
+        <TouchableOpacity onPress={onPress} style={styles.container}>
             <Text style={styles.textBtn}>{title}</Text>
         </TouchableOpacity>
     );
@@ -20,9 +22,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 20,
         paddingHorizontal: 20,
+        backgroundColor: Colors.primary
     },
     textBtn: {
-        color: '#fff',
+        color: Colors.white,
         fontSize: 18
     }
 });

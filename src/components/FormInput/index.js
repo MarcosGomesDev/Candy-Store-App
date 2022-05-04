@@ -1,33 +1,39 @@
-import React from 'react'
+import React, {useState} from 'react'
 import { View, TextInput, StyleSheet, Text } from 'react-native'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
+import Colors from '../../styles/Colors'
 
-const FormInput = (props) => {
-    const {placeholder, name, label, error} = props;
+const FormInput = ({label, name, placeholder,  password, error, onFocus = () => {}, ...props}) => {
+    const [isFocused, setIsFocused] = useState(false)
     return (
-    <>
-    <View style={styles.container}>
-        <Text style={styles.title}>{label}</Text>
-        {error ? (
-            <Text style={{color: 'red', fontSize: 16}}>{error}</Text>
-        ): null}
-    </View>
-    <View style={styles.inputContainer}>
-        <Icon 
-            name={name} 
-            size={26}
-            color={'rgba(118, 92, 174, 1)'}
-            style={styles.icon}
-        />
-        <TextInput 
-            {...props}
-            placeholder={placeholder} 
-            placeholderTextColor='#dcdcdc'
-            style={[styles.input, {borderColor: error ? 'red' : 'rgba(118, 92, 174, 1)'}]}
-        />
-    </View>
-    </>
+        <View style={{width: '99%'}}>
+            <View style={styles.container}>
+                <Text style={styles.title}>{label}</Text>
+                {error ? (
+                    <Text style={{color: Colors.danger, fontSize: 16}}>{error}</Text>
+                ) : <></>}
+            </View>
+            <View style={styles.inputContainer}>
+                <Icon 
+                    name={name} 
+                    size={26}
+                    color={Colors.primary}
+                    style={styles.icon}
+                />
+                <TextInput 
+                    onFocus={() => {
+                        onFocus()
+                        setIsFocused(true)
+                    }}
+                    onBlur={() => setIsFocused(false)}
+                    {...props}
+                    placeholder={placeholder} 
+                    placeholderTextColor='#dcdcdc'
+                    style={[styles.input, {borderColor: error ? Colors.danger : isFocused ? Colors.secondary : Colors.primary}]}
+                />
+            </View>
+        </View>
     )
 }
 
@@ -38,7 +44,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     title: {
-        color: 'rgba(118, 92, 174, 1)',
+        color: Colors.primary,
         fontSize: 16,
         paddingBottom: 10,
         paddingLeft: 10,
@@ -56,12 +62,19 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 55,
         paddingLeft: 50,
-        marginBottom: 20,
+        marginBottom: 17,
         fontSize: 18,
         borderWidth: 1,
         borderRadius: 15,
-        color: 'rgba(118, 92, 174, 1)',
+        color: Colors.primary,
     },
+    btn: {
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
+        right: 15,
+        height: 55
+    }
 });
 
 export default FormInput

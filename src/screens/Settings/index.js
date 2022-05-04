@@ -1,34 +1,23 @@
 //import liraries
-import React, {useState} from 'react';
-import { SafeAreaView, View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { Component } from 'react';
+import { SafeAreaView, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../styles/Colors'
-import SearchInput from '../../components/SearchInput'
-import ProductList from '../../components/ProductList'
 
 // create a component
-const Main = (props) => {
-
+const Settings = (props) => {
     return (
         <SafeAreaView  style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity 
-                    style={{paddingVertical: 20, paddingHorizontal: 10}} 
+                    style={{padding: 20}} 
                     onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}
                 >
                     <Icon name="menu" size={26} color={Colors.primary} />
                 </TouchableOpacity>
-                <SearchInput />
-                <TouchableOpacity style={{paddingVertical: 20, paddingHorizontal: 10}}>
-                    <Icon name="favorite-outline" size={26} color={Colors.primary} />
-                </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <ProductList />
-                <View style={{height: 300}}></View>
-            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -42,14 +31,14 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.6,
-        elevation: 5,
+        elevation: 1,
         zIndex: 1
     }
 });
 
-export default Main;
+//make this component available to the app
+export default Settings;

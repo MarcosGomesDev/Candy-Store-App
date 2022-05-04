@@ -2,6 +2,8 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 
+import Colors from '../../styles/Colors'
+
 // create a component
 const FormBase = ({children}) => {
     return (
@@ -15,10 +17,8 @@ const FormBase = ({children}) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'rgba(159, 217, 253, 1)',
+        backgroundColor: Colors.secondary,
         justifyContent: 'center',
-        paddingVertical: 30,
-        paddingHorizontal: 20
     },
 });
 

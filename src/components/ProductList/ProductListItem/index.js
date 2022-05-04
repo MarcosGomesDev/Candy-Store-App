@@ -1,38 +1,40 @@
 import React, { Component } from 'react'
-import { Text, View, TouchableOpacity, StyleSheet, Image } from 'react-native'
+import { Text, View, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
+import Colors from '../../../styles/Colors'
 
-export default class ProductListItem extends Component {
-  render() {
-    const {name, price, images, category} = this.props.data
-    return (
-        <TouchableOpacity style={styles.container}>
-          <View style={styles.product}>
-            <Image style={styles.imgProduct} source={{uri: images[0]}} />
-            <Text style={styles.category}>{category.name}</Text>
-            <Text style={styles.productName}>{name}</Text>
-            <View style={{flexDirection: 'row', marginTop: 20}}>
-              <Text style={styles.productPrice}>R$ {price}</Text>
-              <TouchableOpacity 
-                style={styles.addFav}
-              >
-                <Icon name="add" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-    )
-  }
+const {width} = Dimensions.get('window')
+
+const ProductListItem = (props) => {
+  const entry = props.data
+  
+  return (
+    <TouchableOpacity style={styles.container} onPress={props.onPress}>
+      <View style={styles.product}>
+        <Image style={styles.imgProduct} source={{uri: entry.images[0]}} />
+        <Text style={styles.category}>{entry.category.name}</Text>
+        <Text numberOfLines={1} style={styles.productName}>{entry.name}</Text>
+        <View style={{flexDirection: 'row', marginTop: 20}}>
+          <Text style={styles.productPrice}>R$ {entry.price}</Text>
+          <TouchableOpacity 
+            style={styles.addFav}
+          >
+            <Icon name="add" size={24} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '46%',
+    width: width < 376 ? '47%' : '46%',
     borderRadius: 10,
     marginHorizontal: 3,
-    marginLeft: 10,
-    marginVertical: 10,
+    marginLeft: width < 376 ? 7 : 10,
+    marginVertical: 5,
     alignItems: 'center',
     backgroundColor: 'white',
     shadowColor: "#000",
@@ -55,16 +57,18 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   category: {
-    color: 'rgba(118, 92, 174, 1)',
+    color: Colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
     paddingLeft: 10
   },
   productName: {
+    width: 170,
     paddingTop: 5,
     paddingLeft: 10,
     fontSize: 16,
     fontWeight: 'bold',
+    color: Colors.black,
   },
   productPrice: {
     flex: 1,
@@ -72,14 +76,15 @@ const styles = StyleSheet.create({
     marginTop:15,
     paddingBottom: 10,
     fontSize: 18,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    color: Colors.black
   },
   addFav: {
     width: 40,
     height: 40,
     justifyContent: 'center', 
     alignItems: 'center', 
-    backgroundColor: 'rgba(118, 92, 174, 1)',
+    backgroundColor: Colors.primary,
     borderBottomRightRadius: 10,
     borderTopLeftRadius: 10,
     position: 'absolute',
@@ -87,3 +92,5 @@ const styles = StyleSheet.create({
     bottom: 0
   }
 })
+
+export default ProductListItem

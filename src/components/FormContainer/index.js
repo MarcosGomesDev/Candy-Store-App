@@ -1,25 +1,27 @@
 //import liraries
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
+
+import Colors from '../../styles/Colors'
 
 // create a component
 const FormContainer = ({children}) => {
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             {children}
-        </View>
+        </SafeAreaView>
     );
 };
 
 // define your styles
 const styles = StyleSheet.create({
     container: {
+        height: 520,
         width: '95%',
-        height: 500,
-        paddingVertical: 20,
         paddingHorizontal: 15,
+        paddingVertical: 20,
         alignSelf: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: Colors.white,
         borderRadius: 20,
         shadowColor: "#000",
         shadowOffset: {
