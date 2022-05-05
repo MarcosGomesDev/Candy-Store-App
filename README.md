@@ -6,6 +6,13 @@
 
 ### Screens
 
+
+<img src="https://user-images.githubusercontent.com/69877839/167037319-c882da76-fe94-425d-8d0c-494f440af8f4.png" width="200" >
+
+<img src="https://user-images.githubusercontent.com/69877839/167037314-0e317277-4fce-4dbc-b458-2b5e3b4580e2.png" width="200" >
+
+<img src="https://user-images.githubusercontent.com/69877839/167037305-f6eec2c7-b959-468c-97f7-5c5064e82e72.png" width="200" >
+
 <img src="https://user-images.githubusercontent.com/69877839/167023857-e7644ee9-0901-411d-aa11-efb491619434.png" width="200" >
 
 <img src="https://user-images.githubusercontent.com/69877839/167023874-4132fe86-8eaf-4283-aac9-97a2665086cd.png" width="200" >
