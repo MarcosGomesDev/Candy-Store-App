@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../styles/Colors'
 import Search from '../../screens/Search'
 import Products from '../../screens/SellerScreens/Products'
+import Favorites from '../../screens/UserScreens/Favorites'
 
 export default [
     {
@@ -19,6 +20,11 @@ export default [
         icon: <Icon name="search" size={20} color={Colors.primary} />,
         name: 'Buscar',
         component: Search
+    },
+    {
+        icon: <Icon name="favorite" size={20} color={Colors.primary} />,
+        name: 'Favoritos',
+        component: Favorites
     },
     {
         icon: <Icon name="storage" size={20} color={Colors.primary} />,

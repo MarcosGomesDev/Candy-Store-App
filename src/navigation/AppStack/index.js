@@ -11,7 +11,7 @@ const INITIAL_ROUTE = stackScreens[0]
 function AppStack() {
     return (
         <Navigator
-            initialRouteName='Main'
+            initialRouteName={INITIAL_ROUTE}
             screenOptions={DEFAULT_SCREEN_OPTIONS}
         >
             {stackScreens.map(({ name, component }) => <Screen {...{ key: name, name, component }} />)}

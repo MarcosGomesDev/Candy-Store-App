@@ -1,10 +1,10 @@
 //import liraries
 import React, {useState} from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Modal, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, Modal, TouchableOpacity,
+Alert, ActivityIndicator } from 'react-native';
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {isValidObjField, isValidEmail, updateError} from '../../../utils/validators'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
@@ -130,19 +130,24 @@ const SellerLogin = ({navigation}) => {
                             />
 
                             <TouchableOpacity 
-                                onPress={() => setModalVisible(true)} 
-                                style={{alignItems: 'center', marginTop: 30}}
+                                onPress={() => navigation.navigate('ForgotPassword')} 
+                                style={{alignItems: 'center', marginTop: 17}}
                             >
                                 <Text style={
                                     {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Não possui conta?</Text>
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17,  textDecorationLine: 'underline'}
-                                }>Cadastre-se</Text>
+                                }>Esqueceu a senha?</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
-                                onPress={() => navigation.navigate('SellerLogin')} 
-                                style={{alignItems: 'center', marginTop: 30}}
+                                onPress={() => setModalVisible(true)} 
+                                style={{alignItems: 'center', marginTop: 20}}
+                            >
+                                <Text style={
+                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
+                                }>Não possui conta? Cadastre-se</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => navigation.navigate('Login')} 
+                                style={{alignItems: 'center', marginTop: 20}}
                             >
                                 <Text style={
                                     {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}

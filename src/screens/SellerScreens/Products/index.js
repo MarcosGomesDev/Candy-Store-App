@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
         shadowOffset: {width: 0, height: 2},
@@ -215,7 +214,8 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         flexWrap: 'wrap',
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        marginTop: 5
     },
     ProductContainer: {
         width: width < 376 ? '47%' : '46%',
@@ -296,5 +296,5 @@ const styles = StyleSheet.create({
     }
 });
 
-//make this component available to the app
+
 export default Products;

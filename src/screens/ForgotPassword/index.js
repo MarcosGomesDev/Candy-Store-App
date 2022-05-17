@@ -1,21 +1,20 @@
 //import liraries
 import React, { Component } from 'react';
 import { SafeAreaView, View, TouchableOpacity, StyleSheet } from 'react-native';
-import { DrawerActions } from '@react-navigation/native';
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../styles/Colors'
 
+import { useNavigation } from '@react-navigation/native';
+
 // create a component
-const Settings = (props) => {
+const ForgotPassword = () => {
+    const navigation = useNavigation()
     return (
-        <SafeAreaView  style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity 
-                    style={{padding: 20}} 
-                    onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}
-                >
-                    <Icon name="menu" size={26} color={Colors.primary} />
+                <TouchableOpacity style={{marginTop: 2}} onPress={navigation.goBack}>
+                    <Icon name="arrow-back" size={30} color={Colors.primary} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -26,19 +25,18 @@ const Settings = (props) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#eee'
     },
     header: {
+        padding: 15,
         flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
         shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.6,
         elevation: 1,
-        zIndex: 1
-    }
+        zIndex: 1,
+    },
 });
 
 
-export default Settings;
+export default ForgotPassword;

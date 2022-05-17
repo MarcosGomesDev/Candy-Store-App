@@ -13,6 +13,7 @@ const Search = () => {
     const navigation = useNavigation()
     const [search, setSearch] = useState('')
     const [data, setData] = useState([])
+    const [focus, setFocus] = useState(true)
 
     useEffect(() => {
         async function loadSearch() {
@@ -22,12 +23,19 @@ const Search = () => {
         loadSearch()
     }, [data])
 
+    const goBack = () => {
+        navigation.goBack()
+        if(search !== '') {
+            setSearch('')
+        }
+    }
+
     return (
         <SafeAreaView  style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={{padding: 15}}
-                    onPress={navigation.goBack}
+                    onPress={goBack}
                 >
                     <Icon name="arrow-back" size={26} color={Colors.primary} />
                 </TouchableOpacity>
@@ -37,6 +45,7 @@ const Search = () => {
                     defaultValue={search}
                     placeholder='Procurar por...'
                     placeholderTextColor="#dcdcdc"
+                    onFocus={() => {}}
                 />
                 {search !== '' ? 
                     <TouchableOpacity style={{paddingRight: 10}} onPress={() => setSearch('')}>
@@ -103,5 +112,5 @@ const styles = StyleSheet.create({
     }
 });
 
-//make this component available to the app
+
 export default Search;

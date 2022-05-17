@@ -190,5 +190,5 @@ const styles = StyleSheet.create({
     },
 });
 
-//make this component available to the app
+
 export default UserRegister;

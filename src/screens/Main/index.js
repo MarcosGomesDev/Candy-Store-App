@@ -1,5 +1,5 @@
 //import liraries
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { SafeAreaView, View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 
@@ -21,13 +21,17 @@ const Main = (props) => {
                     <Icon name="menu" size={26} color={Colors.primary} />
                 </TouchableOpacity>
                 <SearchInput />
-                <TouchableOpacity style={{paddingVertical: 20, paddingHorizontal: 10}}>
+                <TouchableOpacity
+                    onPress={() => props.navigation.navigate('Favoritos')}
+                    style={{paddingVertical: 20, paddingHorizontal: 10}}
+                >
                     <Icon name="favorite-outline" size={26} color={Colors.primary} />
                 </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+            >
                 <ProductList />
-                <View style={{height: 300}}></View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -42,12 +46,11 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.6,
-        elevation: 5,
+        elevation: 9,
         zIndex: 1
     }
 });

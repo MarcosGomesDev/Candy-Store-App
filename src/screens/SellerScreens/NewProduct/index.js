@@ -1,10 +1,10 @@
 //import liraries
 import React, {useState, useEffect} from 'react';
-import { SafeAreaView, ScrollView, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { SafeAreaView, ScrollView, View, TouchableOpacity, Text, TextInput, 
+StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { useNavigation } from '@react-navigation/native';
-
-import FormInput from '../../../components/FormInput'
 import Colors from '../../../styles/Colors'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
@@ -25,25 +25,68 @@ const NewProduct = () => {
                     <Text style={styles.title}>Criar Produto</Text>
                 </View>
             </View>
+            <KeyboardAwareScrollView
+                extraScrollHeight={15}
+            >
             <ScrollView
                 style={{padding: 10}}
             >
                 <View style={styles.formContainer}>
-                    <FormInput
-                        label="Título do produto"
-                        placeholder="Título do produto"
+                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <TextInput
+                        placeholder="Bolo de cenoura"
+                        placeholderTextColor="#aaa"
+                        style={styles.input}
                     />
-                    <FormInput
-                        label="Descrição"
-                        placeholder="Descrição do produto"
+                    <Text style={styles.titleInput}>Preço do produto</Text>
+                    <TextInput
+                        placeholder="R$ 30,00"
+                        placeholderTextColor="#aaa"
+                        keyboardType='numeric'
+                        style={styles.input}
                     />
-                    <FormInput
-                        label="Preço"
-                        placeholder="75,00"
-                        keyboardType="numeric"
+                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <TextInput
+                        placeholder="Bolo de cenoura"
+                        placeholderTextColor="#aaa"
+                        style={styles.input}
+                    />
+                    <Text style={styles.titleInput}>Preço do produto</Text>
+                    <TextInput
+                        placeholder="R$ 30,00"
+                        placeholderTextColor="#aaa"
+                        keyboardType='numeric'
+                        style={styles.input}
+                    />
+                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <TextInput
+                        placeholder="Bolo de cenoura"
+                        placeholderTextColor="#aaa"
+                        style={styles.input}
+                    />
+                    <Text style={styles.titleInput}>Preço do produto</Text>
+                    <TextInput
+                        placeholder="R$ 30,00"
+                        placeholderTextColor="#aaa"
+                        keyboardType='numeric'
+                        style={styles.input}
+                    />
+                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <TextInput
+                        placeholder="Bolo de cenoura"
+                        placeholderTextColor="#aaa"
+                        style={styles.input}
+                    />
+                    <Text style={styles.titleInput}>Preço do produto</Text>
+                    <TextInput
+                        placeholder="R$ 30,00"
+                        placeholderTextColor="#aaa"
+                        keyboardType='numeric'
+                        style={styles.input}
                     />
                 </View>
             </ScrollView>
+            </KeyboardAwareScrollView>
         </SafeAreaView>
     );
 };
@@ -73,9 +116,30 @@ const styles = StyleSheet.create({
     },
     formContainer: {
         alignItems: 'center',
-        margin: 10
+        margin: 10,
+        marginBottom: 20
     },
+    titleInput: {
+        marginBottom: 10,
+        textAlign: 'left',
+        color: Colors.primary,
+        fontSize: 14,
+        fontWeight: 'bold',
+        alignSelf: 'flex-start',
+        paddingLeft: 10
+    },
+    input: {
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.primary,
+        width:"100%",
+        marginBottom: 20,
+        paddingBottom: 10,
+        paddingLeft: 5,
+        fontSize: 16,
+        color: Colors.primary,
+
+    }
 });
 
-//make this component available to the app
+
 export default NewProduct;

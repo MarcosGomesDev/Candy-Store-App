@@ -4,8 +4,6 @@ import { SafeAreaView, View, Text, StyleSheet, Modal, TouchableOpacity, Alert, A
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import {isValidObjField, isValidEmail, updateError} from '../../utils/validators'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
@@ -129,21 +127,25 @@ const Login = ({navigation}) => {
                                 submitting={isSubmitting} 
                                 onPress={handleSubmit} 
                             />
-
-                            <TouchableOpacity 
-                                onPress={() => setModalVisible(true)} 
-                                style={{alignItems: 'center', marginTop: 30}}
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('ForgotPassword')} 
+                                style={{alignItems: 'center', marginTop: 20}}
                             >
                                 <Text style={
                                     {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Não possui conta?</Text>
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17,  textDecorationLine: 'underline'}
-                                }>Cadastre-se</Text>
+                                }>Esqueceu a senha?</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity 
+                            <TouchableOpacity
+                                onPress={() => setModalVisible(true)} 
+                                style={{alignItems: 'center', marginTop: 15}}
+                            >
+                                <Text style={
+                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
+                                }>Não possui conta? Cadastre-se</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
                                 onPress={() => navigation.navigate('SellerLogin')} 
-                                style={{alignItems: 'center', marginTop: 30}}
+                                style={{alignItems: 'center', marginTop: 20}}
                             >
                                 <Text style={
                                     {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}

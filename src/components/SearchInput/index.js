@@ -1,5 +1,5 @@
 //import liraries
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -11,10 +11,22 @@ const MyComponent = () => {
     const navigation = useNavigation()
     const [search, setSearch] = useState(false)
 
+    const onFocus = () => {
+        navigation.navigate('Buscar')
+
+    }
+
+    useEffect(() => {
+    }, [])
+
     return (
-        <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('Buscar')}>
+        <TouchableOpacity style={styles.container}>
             <Icon style={styles.searchIcon} name="search" size={20} color={Colors.primary} />
-                <Text style={{paddingLeft: 50, color: "#dcdcdc"}}>Procurar por...</Text>
+            <TextInput
+                style={styles.input}
+                placeholder='Procurar por...'
+                placeholderTextColor="#dcdcdc"
+            />
         </TouchableOpacity>
     );
 };
@@ -35,7 +47,10 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 15,
     },
+    input: {
+        paddingLeft: 50
+    }
 });
 
-//make this component available to the app
+
 export default MyComponent;
