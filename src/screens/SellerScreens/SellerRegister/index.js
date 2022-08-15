@@ -1,287 +1,212 @@
-//import liraries
-import React, { useState } from 'react';
-import {TouchableOpacity, Text, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 
-import {isValidObjField, isValidEmail, updateError} from '../../../utils/validators'
+import React, { useState, useEffect, createRef } from 'react';
+import {TouchableOpacity, Text, View, StyleSheet, ActivityIndicator, Alert} from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import FormBase from '../../../components/FormBase'
-import FormContainer from '../../../components/FormContainer';
-import FormInput from '../../../components/FormInput'
-import FormPassword from '../../../components/FormPassword'
-import FormButton from '../../../components/FormButton';
+import {showToast} from '../../../store/modules/toast/actions'
+import {useDispatch} from 'react-redux'
 
+import Input from '../../../components/Input'
+import Container from '../../../components/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../../styles/Colors'
 
-import api from '../../../services/api'
 
 // create a component
 const SellerRegister = ({navigation}) => {
-    const [load, setLoad] = useState(false)
+    const dispatch = useDispatch()
 
     const [name, setName] = useState('')
+    const [lastName, setLastName] = useState('')
     const [credential, setCredential] = useState('')
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [confPassword, setConfPassword] = useState('')
-    const [cep, setCep] = useState('')
-    const [complemento, setComplemento] = useState('')
-    const [logradouro, setLogradrouro] = useState('')
-    const [numero, setNumero] = useState('')
-    const [bairro, setBairro] = useState('')
-    const [localidade, setLocalidade] = useState('')
-    const [UF, setUF] = useState('')
 
-    const [errors, setErrors] = useState({});
+    const nameInput = createRef()
+    const lastNameInput = createRef()
+    const credentialInput = createRef()
 
-    const signUp = async () => {
+    useEffect(() => {
+        nameInput.current.resetError()
+        lastNameInput.current.resetError()
+        credentialInput.current.resetError()
         
-        try {
-            const res = await api.post('/sign-up/seller', {
-                name: name,
-                email: email,
-                password: password
-            })
-            if(!res.data.msg) {
-                Alert.alert('Alerta', res.data.err)
-            } else {
-            console.log(res.data.msg)
-            Alert.alert('Sucesso', res.data.msg, [{onPress: () => navigation.navigate('Login')}])
-            formikActions.resetForm()
-            formikActions.setSubmitting(false)
-            }
-            
-        } catch (err) {
-            Alert.alert('Erro', 'Erro ao criar vendedor, tente novamente mais tarde!')
-        }
-        
-    }
-
-    const handleChange = (text, input) => {
-        setInputs(prevState => ({...prevState, [input]: text}))
-    }
-
-    const handleError = (errorMessage, input) => {
-        setErrors((prevState) => ({...prevState, [input]: errorMessage}))
-    }
-
-   
-    
-    async function callCEP(cep) {
-        await fetch(`https://viacep.com.br/ws/${cep}/json/`)
-            .then(res => res.json())
-            .then((data) => {
-                setLogradrouro(data.logradouro)
-                setBairro(data.bairro)
-                setLocalidade(data.localidade)
-                setUF(data.uf)
-
-                setInputs(
-                    (prevState) => 
-                        ({
-                            ...prevState,
-                            logradouro: data.logradouro,
-                            bairro: data.bairro,
-                            localidade: data.localidade,
-                            UF: data.uf,
-                        }))
-            })
-    }
+    }, [name, lastName, credential])
 
     const back = () => {
         navigation.goBack();
     }
 
+    const next = async (name, lastName, credential) => {
+        if(name === '') {
+            dispatch(showToast('Por favor insira o nome', 'error', 'error'))
+            nameInput.current.focusOnError()
+            return
+        }
+
+        if(name.length < 3) {
+            dispatch(showToast('Nome muito curto, mínimo de 3 caracteres!', 'error', 'error'))
+            nameInput.current.focusOnError()
+            return
+        }
+
+        if(lastName === '') {
+            dispatch(showToast('Por favor insira o sobrenome', 'error', 'error'))
+            lastNameInput.current.focusOnError()
+            return
+        }
+
+        if(lastName.length < 3) {
+            dispatch(showToast('Sobrenome muito curto, mínimo de 3 caracteres!', 'error', 'error'))
+            lastNameInput.current.focusOnError()
+            return
+        }
+
+        const item = {name, lastName, credential}
+
+        navigation.navigate('addressInfo', item)
+    }
+
     return (
-        <FormBase>
-            <FormContainer>
-                <TouchableOpacity 
-                    style={styles.backBtn} 
+        <Container>
+            <View style={styles.header}>
+                <TouchableOpacity
                     onPress={back}
+                    style={styles.backBtn}
                 >
-                    <Icon 
-                        name="clear"
-                        size={36} 
-                        color='rgba(118, 92, 174, 1)'
-                        style={{fontWeight: 'bold'}} 
-                    />
+                    <Icon name="arrow-back" size={22} color={Colors.white} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Cadastro</Text>
-                <ScrollView>
-                    <FormInput
-                        name="person"
-                        placeholder='John'
-                        label="Nome"
-                        defaultValue={name}
-                        error={errors.name}
-                        onFocus={() => {
-                            handleError('', 'name')
-                        }}
-                        onChangeText={(text) => setName(text)}
+                <View style={styles.headerContent}>
+                    
+                    <Text style={styles.title}>Olá,</Text>
+                    <Text style={[styles.title, {fontSize: 20}]}>
+                        Por favor insira seus dados!
+                    </Text>
+                </View>
+            </View>
+            <KeyboardAwareScrollView
+                extraScrollHeight={15}
+            >
+                <View style={styles.mainContent}>
+                    <Text
+                        style={{alignSelf: 'flex-start', paddingLeft: 40, fontSize: 26, color: Colors.primary,
+                        fontWeight: 'bold', marginTop: 10}}
+                    >
+                        Cadastro vendedor
+                    </Text>
+                    <Input
+                        title='Nome'
+                        ref={nameInput}
+                        placeholder='Seu nome'
+                        autoCorrect={false}
+                        value={name}
+                        onChangeText={setName}
+                        iconName={'person'}
                     />
-                    <FormInput 
-                        name="perm-contact-cal"
-                        placeholder='CPF ou CNPJ'
-                        label="CPF/CNPJ"
-                        defaultValue={credential}
-                        error={errors.credential}
-                        onFocus={() => {
-                            handleError('', 'credential')
-                        }}
-                        keyboardType="numeric"
-                        onChangeText={text => setCredential(text)}
+                    <Input
+                        title='Sobrenome'
+                        ref={lastNameInput}
+                        placeholder='Seu sobrenome'
+                        autoCorrect={false}
+                        value={lastName}
+                        onChangeText={setLastName}
+                        iconName={'person'}
                     />
-                    <FormInput 
-                        name="home"
-                        placeholder='11350-190'
-                        label="CEP"
-                        defaultValue={cep}
-                        error={errors.cep}
-                        onFocus={() => {
-                            handleError('', 'cep')
-                        }}
-                        onChangeText={(text) => {
-                            handleChange(text, 'cep')
-                            if(text.length == 8) {
-                                callCEP(text)
-                            }
-                        }}
-                        keyboardType="numeric"
+                    <Input
+                        title='CPF'
+                        ref={credentialInput}
+                        placeholder='444.444.444-44'
+                        autoCorrect={false}
+                        value={credential}
+                        onChangeText={setCredential}
+                        iconName={'person'}
                     />
-                    <FormInput 
-                        name="home"
-                        placeholder='Av. Marques'
-                        label="Rua"
-                        defaultValue={logradouro}
-                        error={errors.logradouro}
-                        onFocus={() => {
-                            handleError('', 'logradouro')
-                        }}
-                        onChangeText={(text) => {setLogradrouro(text)}}
-                    />
-                    <FormInput 
-                        name="home"
-                        placeholder='89'
-                        label="Número"
-                        defaultValue={numero}
-                        keyboardType="numeric"
-                        error={errors.numero}
-                        onFocus={() => {
-                            handleError(null, 'numero')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'numero')}
-                    />
-                    <FormInput 
-                        name="home"
-                        label="Complemento"
-                        value={complemento}
-                        keyboardType="numeric"
-                        error={errors.complemento}
-                        onFocus={() => {
-                            handleError(null, 'complemento')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'complemento')}
-                    />
-                    <FormInput 
-                        name="home"
-                        placeholder='Náutica'
-                        label="Bairro"
-                        defaultValue={bairro}
-                        error={errors.bairro}
-                        onFocus={() => {
-                            handleError('', 'bairro')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'bairro')}
-                    />
-                    <FormInput 
-                        name="home"
-                        placeholder='São Vicente'
-                        label="Cidade"
-                        value={localidade}
-                        error={errors.localidade}
-                        onFocus={() => {
-                            handleError('', 'localidade')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'localidade')}
-                    />
-                    <FormInput 
-                        name="home"
-                        placeholder='SP'
-                        label="UF"
-                        defaultValue={UF}
-                        error={errors.UF}
-                        onFocus={() => {
-                            handleError('', 'UF')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'UF')}
-                    />
-                    <FormInput
-                        name="mail-outline"
-                        placeholder='exemplo@exemplo.com'
-                        autoCapitalize="none"
-                        label="Email"
-                        error={errors.email}
-                        defaultValue={email}
-                        onFocus={() => {
-                            handleError('', 'email')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'email')}
-                    />
-                    <FormPassword
-                        name="lock-outline"
-                        placeholder='********'
-                        label="Senha"
-                        defaultValue={password}
-                        error={errors.password}
-                        onFocus={() => {
-                            handleError('', 'password')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'password')}
-                    />
-                    <FormPassword
-                        name="lock-outline"
-                        placeholder="********"
-                        label="Confirmar Senha"
-                        defaultValue={confPassword}
-                        error={errors.confPassword}
-                        onFocus={() => {
-                            handleError('', 'confPassword')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'confPassword')}
-                        
-                    />
-                </ScrollView>
-                <FormButton 
-                    title={load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Cadastrar'}
-                    onPress={signUp}
-                />
-            </FormContainer>
-        </FormBase>
+                    <TouchableOpacity
+                        onPress={() => next(name, lastName, credential)}
+                        style={styles.btn}
+                    >
+                        <Text style={styles.textBtn}>
+                            Próximo
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAwareScrollView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: Colors.white
+    },
+    header: {
+        backgroundColor: Colors.secondary,
+        height: 190,
+        borderBottomRightRadius: 35,
+        justifyContent: 'flex-end'
+    },
+    headerContent: {
+        marginBottom: 50
+    },
     backBtn: {
-        alignSelf: 'flex-end'
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        height: 35,
+        width: 35,
+        backgroundColor: Colors.primary,
+        borderRadius: 150,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     title: {
         color: Colors.primary,
-        paddingLeft: 10,
+        paddingLeft: 20,
         fontWeight: 'bold',
-        textAlign: 'center', 
+        textAlign: 'left', 
         fontSize: 26,
-        marginTop: -10
+    },
+    mainContent: {
+        alignItems: 'center',
+        marginTop: 10,
+        flex: 1
+    },
+    inputContainer: {
+        alignContent: 'center',
+        flexDirection: 'row',
+        marginTop: 40,
+        borderBottomWidth: 1,
+        paddingBottom: 7,
+        paddingHorizontal: 10,
+        width: '80%'
     },
     input: {
-        height: 55,
-        paddingLeft: 50,
-        marginBottom: 20,
-        fontSize: 18,
-        borderWidth: 1,
-        borderRadius: 15,
-        borderColor: Colors.primary,
+        fontSize: 16,
+        paddingLeft: 10,
         color: Colors.primary,
+        flex: 1
+    },
+    forgotBtn: {
+        marginTop: 18,
+        alignSelf: 'flex-end',
+        marginRight: 35
+    },
+    forgotBtnText: {
+        color: Colors.primary
+    },
+    btn: {
+        width: '80%',
+        height: 60,
+        backgroundColor: Colors.primary,
+        borderRadius: 15,
+        marginVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'center'
+    },
+    textBtn: {
+        fontSize: 16,
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
 

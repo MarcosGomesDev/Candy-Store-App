@@ -1,15 +1,16 @@
-//import liraries
+
 import React, { Component } from 'react';
 import { SafeAreaView, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 
+import Container from '../../components/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../styles/Colors'
 
 // create a component
 const Settings = (props) => {
     return (
-        <SafeAreaView  style={styles.container}>
+        <Container>
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={{padding: 20}} 
@@ -18,7 +19,7 @@ const Settings = (props) => {
                     <Icon name="menu" size={26} color={Colors.primary} />
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </Container>
     );
 };
 

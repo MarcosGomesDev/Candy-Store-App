@@ -1,39 +1,54 @@
-//import liraries
-import React, {useState, useEffect} from 'react';
-import {View, Image, Text, StyleSheet, Platform } from 'react-native';
+import React from 'react';
+import {View, Image, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import {DrawerContentScrollView, DrawerItemList} from '@react-navigation/drawer'
 
+import { useLogin } from '../../context/LoginProvider';
 import Colors from '../../styles/Colors'
+import { removeData } from '../../utils/storage';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { getData } from '../../utils/storage';
-
-// create a component
 const CustomDrawer = (props) => {
-    const [user, setUser] = useState({})
-
-    useEffect(() => {
-        getData().then(setUser)
-    }, [])
+    const {setIsLoggedIn, profile} = useLogin()
     
     return (
         <View style={styles.container}>
             <DrawerContentScrollView {...props}>
                 <View style={styles.userContent}>
                     <View style={{flexDirection: 'row', marginLeft: 25}}>
-                        <Image style={styles.logo} source={{uri: user.avatar}} />
+                        <Image style={styles.logo} source={{uri: profile.avatar}} />
                         <View style={styles.userDetails}>
-                            <Text style={styles.userName}>{user.name}</Text>
-                            <Text style={styles.userEmail}>{user.email}</Text>
+                            <Text style={styles.userName}>{profile.name}</Text>
+                            <Text style={styles.userEmail}>{profile.email}</Text>
                         </View>
                     </View>
                 </View>
                 <DrawerItemList {...props} />
             </DrawerContentScrollView>
+            <View
+                style={{height: 60, paddingLeft: 20, borderTopWidth: 0.6, alignItems: 'center',
+                borderTopColor: Colors.primary, flexDirection: 'row'}}
+            >
+                <Icon
+                    name="logout"
+                    size={24}
+                    color={Colors.primary}
+                    style={{}}
+                />
+                <TouchableOpacity
+                    style={{
+                    }}
+                    onPress={() => {
+                        removeData()
+                        setIsLoggedIn(false)
+                    }}
+                >
+                    <Text style={{color: '#656566', paddingLeft: 30}}>Sair</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -65,9 +80,8 @@ const styles = StyleSheet.create({
         color: Colors.primary
     },
     userEmail: {
-        color: '#aaa',
+        color: '#a9a9a9',
     },
 });
-
 
 export default CustomDrawer;

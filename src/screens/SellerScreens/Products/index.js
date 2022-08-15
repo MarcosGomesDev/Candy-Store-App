@@ -1,7 +1,6 @@
-//import liraries
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, View, TouchableOpacity, RefreshControl,
-    StyleSheet, Text, Image, ActivityIndicator, Dimensions, Alert } from 'react-native';
+StyleSheet, Text, Image, ActivityIndicator, Dimensions, Alert } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import Modal from 'react-native-modal'
@@ -9,25 +8,29 @@ const {width} = Dimensions.get('window')
 
 import api from '../../../services/api'
 
+import {showToast} from '../../../store/modules/toast/actions'
+import {useDispatch} from 'react-redux'
 import { getData } from '../../../utils/storage';
 
 import ActionFooter, {ActionPrimaryButton} from '../../../components/core/ActionFooter'
+import Container from '../../../components/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../../styles/Colors'
 
-
-// create a component
 const Products = (props) => {
+    const dispatch = useDispatch()
     const [refresh, setRefresh] = useState(false)
     const [modalVisible, setModalVisible] = useState(false)
     const [products, setProducts] = useState([])
     const [selectedProduct, setSelectedProduct] = useState(null)
     const navigation = useNavigation()
-    
+
     const getProducts = () => {
         return new Promise((resolve, reject) => {
             getData().then(user => {
-                api.get(`/seller/${user.id}`).then(res => {
+                api.get('/seller/products', {
+                    params: {sellerId: user.id}
+                }).then(res => {
                     setProducts(res.data)
                     resolve()
                 }).catch(reject)
@@ -35,27 +38,35 @@ const Products = (props) => {
         })
     }
 
+    async function loadProducts() {
+        const seller = await getData().then()
+        try {
+            const response = await api.get('/seller/products', {
+                params: {sellerId: seller.id}
+            })
+            setProducts(response.data)
+        } catch (error) {
+            dispatch(showToast(error.response.data, 'error', 'error'))
+        }
+    }
+
     useEffect(() => {
+        // loadProducts()
         getProducts()
     }, [])
 
     async function pullMe() {
         setRefresh(true)
-        getProducts().then(() => setRefresh(false))
+        await loadProducts()
+        setRefresh(false)
     }
 
-    const goToEdit = () => {
+    const goToEdit = (item) => {
         setModalVisible(false)
-        navigation.navigate('EditProduct')
+        navigation.navigate('EditProduct', item)
     }
 
     async function deleteProduct(productId) {
-        async function confirmDelete() {
-            await api.delete(`/product/${productId}/delete`)
-            setModalVisible(false)
-            Alert.alert('Sucesso', 'Produto deletado com sucesso')
-        }
-
         Alert.alert('Excluir', 'Você deseja realmente exluir este produto?', [
             {
                 text: 'Não',
@@ -67,6 +78,16 @@ const Products = (props) => {
                 onPress: confirmDelete
             }
         ])
+
+        async function confirmDelete() {
+            try {
+                const response = await api.delete(`/product/${productId}/delete`)
+                setModalVisible(false)
+                dispatch(showToast(response.data, 'success', 'done'))
+            } catch (error) {
+                dispatch(showToast(error.response.data, 'error', 'error'))
+            }
+        }
     }
 
     function handleEditProduct(product) {
@@ -75,17 +96,16 @@ const Products = (props) => {
     } 
 
     return (
-        <SafeAreaView  style={styles.container}>
+        <Container>
             <View style={styles.header}>
                 <TouchableOpacity
-                    style={{paddingVertical: 20, paddingHorizontal: 10}} 
                     onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}
                 >
                     <Icon name="menu" size={26} color={Colors.primary} />
                 </TouchableOpacity>
-                <View style={{width: '70%'}}>
-                    <Text style={styles.title}>Meus Produtos</Text>
-                </View>
+                <Text style={styles.title}>
+                    Meus Produtos
+                </Text>
             </View>
             <View style={styles.addContainer}>
                 <TouchableOpacity 
@@ -97,7 +117,7 @@ const Products = (props) => {
             </View>
             {products.length < 0 ?
                 <View style={{flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                    <ActivityIndicator style={styles.load} size='large' color={Colors.primary}  />
+                    <ActivityIndicator style={styles.load} size='large' color={Colors.primary} />
                 </View>
                 :
                 <ScrollView
@@ -116,11 +136,20 @@ const Products = (props) => {
                             onPress={() => navigation.navigate('ProductItem', item)}
                         >
                             <View style={styles.product}>
-                                <Image style={styles.imgProduct} source={{uri: item.images[0]}} />
-                                <Text style={styles.category}>{item.category.name}</Text>
-                                <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
+                                <Image
+                                    style={styles.imgProduct}
+                                    source={{uri: item.images[0]}}
+                                />
+                                <Text style={styles.category}>
+                                    {item.category.name}
+                                </Text>
+                                <Text numberOfLines={1} style={styles.productName}>
+                                    {item.name}
+                                </Text>
                                 <View style={{flexDirection: 'row', marginTop: 20}}>
-                                    <Text style={styles.productPrice}>R$ {item.price}</Text>
+                                    <Text style={styles.productPrice}>
+                                        R$ {item.price}
+                                    </Text>
                                     <TouchableOpacity 
                                         onPress={() => handleEditProduct(item)}
                                         style={styles.addFav}
@@ -129,58 +158,63 @@ const Products = (props) => {
                                     </TouchableOpacity>
                                 </View>
                             </View>
+                            <Modal
+                                isVisible={modalVisible}
+                                animationType="slide"
+                                transparent={true}
+                                backdropOpacity={0.40}
+                                useNativeDriver={true}
+                            >
+                                <SafeAreaView style={styles.modalContainer}>
+                                    <Text style={[styles.title, {margin: 15}]}>
+                                        Selecione uma das opções:
+                                    </Text>
+                                    <View style={{marginBottom: 10, flexDirection: 'row', alignItems: 'center'}}>
+                                        <TouchableOpacity
+                                            onPress={() => goToEdit(item)}
+                                            style={[styles.btnModal, {backgroundColor: Colors.primary}]}
+                                        >
+                                            <Icon name="edit" size={28} color={Colors.white} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => deleteProduct(selectedProduct._id)}
+                                            style={[styles.btnModal, {backgroundColor: Colors.danger}]}
+                                        >
+                                            <Icon name="delete" size={28} color={Colors.white} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <ActionFooter>
+                                        <ActionPrimaryButton
+                                            title="Cancelar"
+                                            onPress={() => setModalVisible(false)}
+                                        />
+                                    </ActionFooter>
+                                </SafeAreaView>
+                            </Modal>
                         </TouchableOpacity>
                     ))}
                     </View>
                 </ScrollView>
             }
-
-            <Modal isVisible={modalVisible} animationType="slide" transparent={true}>
-                <SafeAreaView style={styles.modalContainer}>
-                    <Text style={[styles.title, {margin: 15}]}>Selecione uma das opções:</Text>
-                    <View style={{marginBottom: 10, flexDirection: 'row', alignItems: 'center'}}>
-                        <TouchableOpacity
-                            onPress={goToEdit}
-                            style={[styles.btnModal, {backgroundColor: Colors.primary}]}
-                        >
-                            <Icon name="edit" size={28} color={Colors.white} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteProduct(selectedProduct._id)}
-                            style={[styles.btnModal, {backgroundColor: Colors.danger}]}
-                        >
-                            <Icon name="delete" size={28} color={Colors.white} />
-                        </TouchableOpacity>
-                    </View>
-                    <ActionFooter>
-                        <ActionPrimaryButton
-                            title="Cancelar"
-                            onPress={() => setModalVisible(false)}
-                        />
-                    </ActionFooter>
-                </SafeAreaView>
-            </Modal>
-            
-        </SafeAreaView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#eee'
-    },
     header: {
+        padding: 15,
+        paddingVertical: 20,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.6,
-        elevation: 5,
+        elevation: 1,
         zIndex: 1
     },
     title: {
+        width: '80%',
         color: Colors.primary,
         fontSize: 18,
         fontWeight: 'bold',

@@ -1,246 +1,296 @@
-//import liraries
-import React, {useState} from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Modal, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import {Formik} from 'formik'
-import * as Yup from 'yup'
+import React, {useState, createRef, useEffect, useRef} from 'react';
+import { View, Text, StyleSheet, Animated,  Platform, PermissionsAndroid,
+TouchableOpacity, ActivityIndicator } from 'react-native';
 
-import {isValidObjField, isValidEmail, updateError} from '../../utils/validators'
-
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import { useNavigation } from '@react-navigation/native';
+import Geolocation from '@react-native-community/geolocation';
+import {showToast} from '../../store/modules/toast/actions'
+import {useDispatch} from 'react-redux'
+import Container from '../../components/Container';
 import Colors from '../../styles/Colors'
-
-import FormBase from '../../components/FormBase'
-import FormContainer from '../../components/FormContainer'
-import FormInput from '../../components/FormInput';
-import FormPassword from '../../components/FormPassword'
-import FormButton from '../../components/FormButton'
-
+import Input from '../../components/Input';
 import api from '../../services/api'
-import { storeData, getData } from '../../utils/storage';
 
-const validationSchema = Yup.object({
-    email: Yup.string().email('email inválido!').required('email é obrigatório!'),
-    password: Yup.string().trim().min(3, 'Insira uma senha com 3 carat ou mais').required('senha é obrigatória!')
-})
+import { useLogin } from '../../context/LoginProvider';
+import {isValidEmail} from '../../utils/validators'
+import { widthPercent, heightPercent } from '../../utils/dimensions';
+import { storeData, storeLocation, getLocation } from '../../utils/storage';
 
-// create a component
-const Login = ({navigation}) => {
-    const [modalVisible, setModalVisible] = useState(false);
+const Login = () => {
+    const {setIsLoggedIn, setProfile} = useLogin()
+    const dispatch = useDispatch()
+    const navigation = useNavigation()
+    const animatedScale = useRef(new Animated.Value(0)).current;
     const [load, setLoad] = useState(false)
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [currentLatitude, setCurrentLatitude] = useState('')
+    const [currentLongitude, setCurrentLongitude] = useState('')
+    const [wathID, setWathID] = useState(null)
 
-    const userInfo = {
-        email: '',
-        password: ''
+    const emailInput = createRef()
+    const passInput = createRef()
+
+    const callLocation = async() => {
+        if(Platform.OS === 'ios') {
+            getLocation()
+        } else {
+            try {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+                )
+                if(granted === PermissionsAndroid.RESULTS.GRANTED) {
+                    getLocation()
+                } else {
+                    dispatch(showToast('Permissão negada'))
+                }
+            } catch (error) {
+                console.log(error)
+            }
+            
+        }
     }
 
-    const [error, setError] = useState('')
-
-    const {email, password} = userInfo
-
-    const handleOnChangeText = (value, fieldName) => {
-        setUserInfo({...userInfo, [fieldName]: value})
-    }
     
-    const isValidForm = () => {
-        if(!isValidObjField(userInfo)) 
-            return updateError('Preencha todos os campos!', setError)
-        if(!isValidEmail(email)) 
-            return updateError('email inválido!', setError)
-        if(!password.trim() || password.length < 3) 
-            return updateError('utilize uma senha com 3 ou mais caract!', setError)
+
+    const getLocation = async() => {
+        Geolocation.getCurrentPosition(
+            // ADICIONEI ASYNC PRA PODER DAR AWAIT NA CONST
+            async(position) => {
+                //PEGA LAT E LONG SEPARADO
+                const latitude = JSON.stringify(position.coords.latitude)
+                const longitude = JSON.stringify(position.coords.longitude)
+
+                // USERE LAT E LONG DENTRO DE UMA CONST PRA MANDAR PRO ASYNC
+                const userLocation = {
+                    latitude,
+                    longitude,
+                }
+
+                //SALVA A LOCALIZACAO NO DISPOSITIVO
+                await storeLocation(userLocation)
+            },
+            (error) => {
+                dispatch(showToast('Não foi possível obter sua localização', 'error', 'error'))
+            }
+        )
         
-        return true
+
+
+
+        const wathID = Geolocation.watchPosition( async(position) => {
+            const currentLatitude = JSON.stringify(position.coords.latitude)
+            const currentLongitude = JSON.stringify(position.coords.longitude)
+            setCurrentLatitude(currentLatitude)
+            setCurrentLongitude(currentLongitude)
+        })
+
+        setWathID(wathID)
     }
 
-    const submitForm = () => {
-        if(isValidForm())
+    useEffect(() => {
+        animatedScale.setValue(1)
+        emailInput.current.resetError()
+        passInput.current.resetError()
+        let unmounted = false
 
-        console.log(userInfo)
-    }
+        if(!unmounted) {
+            callLocation()
+            
+        }
 
-    const signIn = async (values, formikActions) => {
+        return () => {
+            unmounted = true
+        }
+    }, [email, password])
+
+    const signIn = async () => {
+        animatedScale.setValue(0.8)
+        Animated.spring(animatedScale, {
+            toValue: 1,
+            bounciness: 24,
+            speed: 20,
+            useNativeDriver: true
+        }).start()
+
+        if(email === '') {
+            dispatch(showToast('Por favor insira o email', 'error', 'error'))
+            emailInput.current.focusOnError()
+            return
+        }
+
+        if(!isValidEmail(email)) {
+            dispatch(showToast('Email inválido!', 'error', 'error'))
+            emailInput.current.focusOnError()
+            return
+        }
+
+        if(password === '') {
+            dispatch(showToast('Por favor insira a senha', 'error', 'error'))
+            passInput.current.focusOnError()
+            return
+        }
+
+        // if(password.length < 8) {
+        //     dispatch(showToast('Muito curta, a senha precisa ter 8 caracteres', 'error', 'lock'))
+        //     passInput.current.focusOnError()
+        //     return
+        // }
+
         try {
             setLoad(true)
-            const res = await api.post('/sign-in/user', {
-                ...values
-            })
-            if(res.data.err) {
-                Alert.alert('Erro', res.data.err)
-            } else {
+            const response = await api.post('/sign-in/user', {email, password})
             const userInfo = {
-                id: res.data.user._id,
-                name: res.data.user.name,
-                email: res.data.user.email,
-                avatar: res.data.user.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
-                token: res.data.token,
+                id: response.data.user._id,
+                name: response.data.user.name,
+                email: response.data.user.email,
+                avatar: response.data.user.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
+                seller: response.data.user.seller,
+                token: response.data.token,
             }
-
-            await storeData(userInfo)
-            formikActions.resetForm()
-            formikActions.setSubmitting(false)
-            }
-        } catch (error) {
             
-        } finally {
+            await storeData(userInfo)
             setLoad(false)
-            Alert.alert('Sucesso', 'Acesso liberado', [{onPress: () => navigation.navigate('Main')}])
+            setEmail('')
+            setPassword('')
+            setProfile(userInfo)
+            setIsLoggedIn(true)
+        } catch (error) {
+            setTimeout(() => {
+                setLoad(false)
+            }, 100);
+            dispatch(showToast(error.response.data, 'error', 'error'))
         }
     }
 
     return (
-        <FormBase>
-            <Formik 
-                initialValues={userInfo} 
-                validationSchema={validationSchema}
-                onSubmit={signIn}
-            >
-                {({values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit}) => {
-                    const {email, password} = values
-                    return (
-                        <FormContainer style={{height: 400}}>
-                            <Text style={styles.title}
-                            >
-                                Bem Vindo
-                            </Text>
-                            <FormInput 
-                                label="Email"
-                                name="mail-outline"
-                                placeholder='email'
-                                placeholderTextColor='#dcdcdc'
-                                autoCapitalize='none'
-                                value={email}
-                                error={touched.email && errors.email}
-                                onBlur={handleBlur('email')}
-                                onChangeText={handleChange('email')}
-                            />
-                            <FormPassword 
-                                label='Senha'
-                                placeholder='********'
-                                placeholderTextColor='#dcdcdc'
-                                value={password}
-                                error={touched.password && errors.password}
-                                onBlur={handleBlur('password')}
-                                onChangeText={handleChange('password')}
-                            />
-                            <FormButton 
-                                title={load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Entrar'}
-                                submitting={isSubmitting} 
-                                onPress={handleSubmit} 
-                            />
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('ForgotPassword')} 
-                                style={{alignItems: 'center', marginTop: 20}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Esqueceu a senha?</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => setModalVisible(true)} 
-                                style={{alignItems: 'center', marginTop: 15}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Não possui conta? Cadastre-se</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('SellerLogin')} 
-                                style={{alignItems: 'center', marginTop: 20}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Entrar como vendedor</Text>
-                            </TouchableOpacity>
-                        </FormContainer>
-                    )
-                }}
-            </Formik>
-            <Modal 
-                visible={modalVisible}
-                animationType='slide'
-            >
-                <SafeAreaView style={styles.modal}>
-                    <View style={styles.contentModal}>
-                        <TouchableOpacity 
-                            style={styles.backBtn} 
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Icon name="clear" size={36} color={Colors.primary} style={{fontWeight: 'bold'}} />
-                        </TouchableOpacity>
-                        <Text style={styles.title}>Cadastrar como:</Text>
-                        <TouchableOpacity style={styles.btn} 
-                            onPress={() => {
-                                setModalVisible(false)
-                                navigation.navigate('UserRegister')
-                            }
-                        }>
-                            <Text style={styles.textBtn}>Usuário</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={styles.btn}
-                            onPress={() => {
-                                setModalVisible(false)
-                                navigation.navigate('SellerRegister')
-                            }
-                        }>
-                            <Text style={styles.textBtn}>Vendedor</Text>
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </Modal>
-        </FormBase>
+        <Container color={'#fff'}>
+            <View style={styles.header}>
+                <View style={styles.headerContent}>
+                    <Text style={styles.title}>Olá,</Text>
+                    <Text style={styles.title}>Bem-vindo de volta!</Text>
+                </View>
+            </View>
+            <View style={styles.mainContent}>
+                <Text
+                    style={{alignSelf: 'flex-start', paddingLeft: 40, fontSize: 26,
+                    color: Colors.primary, fontWeight: 'bold', marginTop: 10}}
+                >Login</Text>
+                <Input
+                    title="Email"
+                    ref={emailInput}
+                    placeholder='email@exemplo.com'
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={email}
+                    onChangeText={setEmail}
+                    iconName={'person'}
+                    keyboardType="email-address"
+                />
+                <Input
+                    title="Senha"
+                    ref={passInput}
+                    placeholder='********'
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={password}
+                    onChangeText={setPassword}
+                    iconName={'lock'}
+                    secureTextEntry
+                />
+                <TouchableOpacity
+                    style={styles.forgotBtn}
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                >
+                    <Text style={styles.forgotBtnText}>Esqueceu a senha?</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={
+                        signIn
+                    }
+                    style={styles.btn}
+                >
+                    <Text style={styles.textBtn}>
+                        {load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Entrar'}
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('SellerLogin')}
+                    style={{marginTop: 20, marginBottom: 50,}}
+                >
+                    <Text style={[styles.forgotBtnText, {fontWeight: '600'}]}>
+                        Entrar como vendedor
+                    </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                    style={styles.btnRegister}
+                    onPress={() => navigation.navigate('UserRegister')}
+                >
+                    <Text style={styles.forgotBtnText}>
+                        Não possui conta? Cadastre-se
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </Container>
     );
 };
 
 const styles = StyleSheet.create({
+    header: {
+        backgroundColor: Colors.secondary,
+        height: heightPercent('25%'),
+        borderBottomRightRadius: 35,
+        justifyContent: 'flex-end'
+    },
+    headerContent: {
+        marginBottom: 50
+    },
     title: {
         color: Colors.primary,
-        paddingBottom: 20,
-        paddingLeft: 10,
+        paddingLeft: 20,
         fontWeight: 'bold',
-        textAlign: 'center', 
+        textAlign: 'left', 
         fontSize: 26,
-        marginTop: 20
+    },
+    mainContent: {
+        alignItems: 'center',
+        marginTop: 10,
+        flex: 1
+    },
+    inputContainer: {
+        alignContent: 'center',
+        flexDirection: 'row',
+        marginTop: 40,
+        borderBottomWidth: 1,
+        paddingBottom: 7,
+        paddingHorizontal: 10,
+        width: '80%'
+    },
+    forgotBtn: {
+        marginTop: 18,
+        alignSelf: 'flex-end',
+        marginRight: 35
+    },
+    forgotBtnText: {
+        color: Colors.primary
     },
     btn: {
-        width: 280,
-        paddingVertical: 25,
+        width: '80%',
+        height: 60,
         backgroundColor: Colors.primary,
         borderRadius: 15,
         marginVertical: 20,
         alignItems: 'center',
+        justifyContent: 'center'
     },
     textBtn: {
         fontSize: 16,
         color: 'white',
         fontWeight: 'bold',
     },
-    modal: {
-        flex: 1,
-        backgroundColor: Colors.secondary,
-        justifyContent: 'center',
+    btnRegister: {
         alignItems: 'center',
-    },
-    backBtn: {
-        alignSelf: 'flex-end',
-        padding: 10
-
-    },
-    contentModal: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.background,
-        width: '80%',
-        height: 'auto',
-        borderRadius: 20,
-        shadowColor: Colors.black,
-        shadowOffset: {
-            width: 0,
-            height: 7,
-        },
-        shadowOpacity: 0.43,
-        shadowRadius: 9.51,
-        elevation: 15,
     }
 });
 

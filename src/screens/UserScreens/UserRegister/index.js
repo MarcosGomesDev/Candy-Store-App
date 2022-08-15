@@ -1,194 +1,268 @@
-//import liraries
-import React, { useState } from 'react';
-import {TouchableOpacity, Text, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 
-import {isValidObjField, isValidEmail, updateError} from '../../../utils/validators'
+import React, {useState, createRef, useEffect} from 'react';
+import { SafeAreaView, View, Text, StyleSheet, ScrollView, Dimensions, PixelRatio,
+TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import FormBase from '../../../components/FormBase'
-import FormContainer from '../../../components/FormContainer';
-import FormInput from '../../../components/FormInput'
-import FormPassword from '../../../components/FormPassword'
-import FormButton from '../../../components/FormButton';
+import {showToast} from '../../../store/modules/toast/actions'
+import {useDispatch} from 'react-redux'
 
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import Container from '../../../components/Container';
 import Colors from '../../../styles/Colors'
+import Icon from 'react-native-vector-icons/MaterialIcons'
+import Input from '../../../components/Input';
 
 import api from '../../../services/api'
+import {isValidEmail} from '../../../utils/validators'
 
-// create a component
 const UserRegister = ({navigation}) => {
+    const dispatch = useDispatch()
     const [load, setLoad] = useState(false)
-    const [inputs, setInputs] = useState({
-        name: '',
-        email: '',
-        password: '',
-        confPassword: ''
-    })
-
-    const [errors, setErrors] = useState({});
-
-    const validate = () => {
-        let error = true
-        if(inputs.name === '') {
-            handleError('Por favor insira o nome', 'name')
-        }
-        if(inputs.email === '') {
-            handleError('Por favor insira o email', 'email')
-            error = false
-        }
-        if(inputs.password === '') {
-            handleError('Por favor insira a senha', 'password')
-        }
-        if(inputs.confPassword !== inputs.password) {
-            handleError('as senhas não coincidem', 'password')
-            handleError('as senhas não coincidem', 'confPassword')
-        }
-        if(!error) {
-
-        }
-        try {
-            if(error) {
-                setLoad(false)
-                Alert.alert('Sucesso', 'Acesso liberado', [{onPress: () => navigation.navigate('Login')}])
-            }
-        } catch (error) {
-            
-        }
-    }
-
-    const handleChange = (text, input) => {
-        setInputs(prevState => ({...prevState, [input]: text}))
-    }
-
-    const handleError = (errorMessage, input) => {
-        setErrors((prevState) => ({...prevState, [input]: errorMessage}))
-    }
-
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confPassword, setConfPassword] = useState('')
 
+    const nameInput = createRef()
+    const emailInput = createRef()
+    const passInput = createRef()
+    const confPassInput = createRef()
+
+    useEffect(() => {
+        nameInput.current.resetError()
+        emailInput.current.resetError()
+        passInput.current.resetError()
+        confPassInput.current.resetError()
+    }, [name, email, password, confPassword])
 
     const signUp = async () => {
-        // try {
-        //     const res = await api.post('/sign-up/seller', {
-        //         ...values
-        //     })
-        //     if(!res.data.msg) {
-        //         Alert.alert('Alerta', res.data.err)
-        //     } else {
-        //     console.log(res.data.msg)
-        //     Alert.alert('Sucesso', res.data.msg, [{onPress: () => navigation.navigate('Login')}])
-        //     formikActions.resetForm()
-        //     formikActions.setSubmitting(false)
-        //     }
-            
-        // } catch (err) {
-        //     Alert.alert('Erro', 'Erro ao criar usuário, tente novamente mais tarde!')
-        // }
-    }
 
-    const back = () => {
-        navigation.goBack();
+        if(name === '') {
+            dispatch(showToast('Por favor insira o nome', 'error', 'person'))
+            nameInput.current.focusOnError()
+            return
+        }
+
+        if(name.length < 3) {
+            dispatch(showToast('Nome muito curto, mínimo de 3 caracteres!', 'error', 'person'))
+            nameInput.current.focusOnError()
+            return
+        }
+
+        if(email === '') {
+            dispatch(showToast('Por favor insira o email', 'error', 'email'))
+            emailInput.current.focusOnError()
+            return
+        }
+
+        if(!isValidEmail(email)) {
+            dispatch(showToast('Email inválido!', 'error', 'email'))
+            emailInput.current.focusOnError()
+            return
+        }
+
+        if(password === '') {
+            dispatch(showToast('Por favor insira a senha', 'error', 'lock'))
+            passInput.current.focusOnError()
+            return
+        }
+
+        // if(password.length < 8) {
+        //     dispatch(showToast('Muito curta, a senha precisa ter 8 caracteres', 'error', 'lock'))
+        //     passInput.current.focusOnError()
+        //     return
+        // }
+
+        if(password !== confPassword) {
+            dispatch(showToast('As senhas não correspondem!', 'error', 'lock'))
+            confPassInput.current.focusOnError()
+            return
+        }
+
+        try {
+            setLoad(true)
+            const response = await api.post('/sign-up/user', {name, email, password})
+            setLoad(false)
+            dispatch(showToast(response.data, 'success', 'person'))
+            setTimeout(() => {  
+                navigation.navigate('Login')
+            }, 2000);
+        } catch (error) {
+            setTimeout(() => {
+                setLoad(false)
+            }, 100);
+            dispatch(showToast(error.response.data, 'error', 'person'))
+        }
     }
 
     return (
-        <FormBase>
-            <FormContainer>
-                <TouchableOpacity 
-                    style={styles.backBtn} 
-                    onPress={back}
+        <Container>
+            <View style={styles.header}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backBtn}
                 >
-                    <Icon 
-                        name="clear"
-                        size={36} 
-                        color='rgba(118, 92, 174, 1)'
-                        style={{fontWeight: 'bold'}} 
-                    />
+                    <Icon name="arrow-back" size={22} color={Colors.white} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Cadastro</Text>
-                <ScrollView>
-                    <FormInput
-                        name="person"
-                        placeholder='John'
-                        label="Nome"
-                        defaultValue={name}
-                        error={errors.name}
-                        onFocus={() => {
-                            handleError('', 'name')
-                        }}
-                        onChangeText={(text) => setName(text)}
-                    />
-                    <FormInput
-                        name="mail-outline"
-                        placeholder='exemplo@exemplo.com'
-                        autoCapitalize="none"
-                        label="Email"
-                        error={errors.email}
-                        defaultValue={email}
-                        onFocus={() => {
-                            handleError('', 'email')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'email')}
-                    />
-                    <FormPassword
-                        name="lock-outline"
-                        placeholder='********'
-                        label="Senha"
-                        defaultValue={password}
-                        error={errors.password}
-                        onFocus={() => {
-                            handleError('', 'password')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'password')}
-                    />
-                    <FormPassword
-                        name="lock-outline"
-                        placeholder="********"
-                        label="Confirmar Senha"
-                        defaultValue={confPassword}
-                        error={errors.confPassword}
-                        onFocus={() => {
-                            handleError('', 'confPassword')
-                        }}
-                        onChangeText={(text) => handleChange(text, 'confPassword')}
-                        
-                    />
+                <View style={styles.headerContent}>
+                    
+                    <Text style={styles.title}>Olá,</Text>
+                    <Text style={[styles.title, {fontSize: 20}]}>
+                        Por favor insira seus dados!
+                    </Text>
+                </View>
+            </View>
+            <KeyboardAwareScrollView
+                extraScrollHeight={50}
+            >
+                <ScrollView >
+                    <View style={styles.mainContent}>
+                        <Text
+                            style={{alignSelf: 'flex-start', paddingLeft: 40, fontSize: 26,
+                            color: Colors.primary, fontWeight: 'bold', marginTop: 10}}
+                        >
+                            Cadastro usuário
+                        </Text>
+                        <Input
+                            title="Nome"
+                            ref={nameInput}
+                            placeholder='Seu nome'
+                            autoCorrect={false}
+                            value={name}
+                            onChangeText={setName}
+                            iconName={'person'}
+                        />
+                        <Input
+                            title="Email"
+                            ref={emailInput}
+                            placeholder='email@exemplo.com'
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            value={email}
+                            onChangeText={setEmail}
+                            iconName={'email'}
+                            keyboardType="email-address"
+                        />
+                        <Input
+                            title="Senha"
+                            ref={passInput}
+                            placeholder='********'
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            value={password}
+                            onChangeText={setPassword}
+                            iconName={'lock'}
+                            secureTextEntry
+                        />
+                        <Input
+                            title="Confirmar senha"
+                            ref={confPassInput}
+                            placeholder='********'
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            value={confPassword}
+                            onChangeText={setConfPassword}
+                            iconName={'lock'}
+                            secureTextEntry
+                        />
+                        <TouchableOpacity
+                            onPress={signUp}
+                            style={styles.btn}
+                        >
+                            <Text style={styles.textBtn}>
+                                {
+                                    load ? <ActivityIndicator size={"small"} color={Colors.white} /> 
+                                    :
+                                    'Cadastrar'
+                                }
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </ScrollView>
-                <FormButton 
-                    title={load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Cadastrar'}
-                    onPress={validate}
-                />
-            </FormContainer>
-        </FormBase>
+            </KeyboardAwareScrollView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
+    header: {
+        backgroundColor: Colors.secondary,
+        height: 190,
+        borderBottomRightRadius: 35,
+        justifyContent: 'flex-end',
+    },
+    headerContent: {
+        marginBottom: 50
+    },
     backBtn: {
-        alignSelf: 'flex-end'
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        height: 35,
+        width: 35,
+        backgroundColor: Colors.primary,
+        borderRadius: 150,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     title: {
         color: Colors.primary,
-        paddingLeft: 10,
+        paddingLeft: 20,
         fontWeight: 'bold',
-        textAlign: 'center', 
+        textAlign: 'left', 
         fontSize: 26,
-        marginTop: -10
+    },
+    mainContent: {
+        alignItems: 'center',
+        marginTop: 5,
+        flex: 1
+    },
+    inputContainer: {
+        alignContent: 'center',
+        flexDirection: 'row',
+        marginTop: 40,
+        borderBottomWidth: 1,
+        paddingBottom: 7,
+        paddingHorizontal: 10,
+        width: '80%'
     },
     input: {
-        height: 55,
-        paddingLeft: 50,
-        marginBottom: 20,
-        fontSize: 18,
-        borderWidth: 1,
-        borderRadius: 15,
-        borderColor: Colors.primary,
+        fontSize: 16,
+        paddingLeft: 10,
         color: Colors.primary,
+        flex: 1
     },
+    forgotBtn: {
+        marginTop: 18,
+        alignSelf: 'flex-end',
+        marginRight: 35
+    },
+    forgotBtnText: {
+        color: Colors.primary
+    },
+    btn: {
+        width: '80%',
+        height: 60,
+        backgroundColor: Colors.primary,
+        borderRadius: 15,
+        marginVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    textBtn: {
+        fontSize: 16,
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    bottomContainer: {
+        paddingHorizontal: 10,
+        alignItems: 'center',
+        marginBottom: 20
+    },
+    btnBottom: {
+        position: 'absolute',
+        bottom: 0
+    }
 });
-
 
 export default UserRegister;

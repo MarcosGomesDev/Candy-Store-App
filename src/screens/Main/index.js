@@ -1,18 +1,20 @@
-//import liraries
-import React, {useState, useEffect} from 'react';
-import { SafeAreaView, View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, } from 'react-native';
 import { DrawerActions } from '@react-navigation/native';
 
+import { widthPercent, heightPercent } from '../../utils/dimensions';
+import Container from '../../components/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../styles/Colors'
 import SearchInput from '../../components/SearchInput'
 import ProductList from '../../components/ProductList'
 
-// create a component
+import { getData } from '../../utils/storage';
+
 const Main = (props) => {
 
     return (
-        <SafeAreaView  style={styles.container}>
+        <Container>
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={{paddingVertical: 20, paddingHorizontal: 10}} 
@@ -33,16 +35,11 @@ const Main = (props) => {
             >
                 <ProductList />
             </ScrollView>
-        </SafeAreaView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#eee'
-    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -51,7 +48,8 @@ const styles = StyleSheet.create({
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.6,
         elevation: 9,
-        zIndex: 1
+        zIndex: 1,
+        elevation: 1,
     }
 });
 

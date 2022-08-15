@@ -1,103 +1,101 @@
-//import liraries
+
 import React, {useState, useEffect} from 'react';
 import { SafeAreaView, ScrollView, View, TouchableOpacity, Text, TextInput, 
-StyleSheet } from 'react-native';
+StyleSheet, Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 import { useNavigation } from '@react-navigation/native';
+
+import Container from '../../../components/Container';
 import Colors from '../../../styles/Colors'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
-// create a component
+const fundo = 'https://res.cloudinary.com/gomesdev/image/upload/v1654276325/download_eaicvj.png'
+
 const NewProduct = () => {
     const navigation = useNavigation()
 
     return (
-        <SafeAreaView style={styles.container}>
+        <Container>
             <View style={styles.header}>
-                <TouchableOpacity 
-                    style={{padding: 15}}
+                <TouchableOpacity
+                    // style={{paddingVertical: 20, paddingHorizontal: 10}}
                     onPress={navigation.goBack}
                 >
                     <Icon name="arrow-back" size={26} color={Colors.primary} />
                 </TouchableOpacity>
-                <View style={{width: '70%'}}>
-                    <Text style={styles.title}>Criar Produto</Text>
-                </View>
+                <Text style={styles.title}>
+                    Criar Produto
+                </Text>
             </View>
             <KeyboardAwareScrollView
-                extraScrollHeight={15}
+                extraScrollHeight={20}
             >
             <ScrollView
                 style={{padding: 10}}
             >
                 <View style={styles.formContainer}>
-                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <Text style={styles.titleInput}>
+                        Título do produto
+                    </Text>
                     <TextInput
                         placeholder="Bolo de cenoura"
                         placeholderTextColor="#aaa"
                         style={styles.input}
                     />
-                    <Text style={styles.titleInput}>Preço do produto</Text>
+                    <Text style={styles.titleInput}>
+                        Preço do produto
+                    </Text>
                     <TextInput
                         placeholder="R$ 30,00"
                         placeholderTextColor="#aaa"
                         keyboardType='numeric'
                         style={styles.input}
                     />
-                    <Text style={styles.titleInput}>Título do produto</Text>
+                    <Text style={styles.titleInput}>
+                        Título do produto
+                    </Text>
                     <TextInput
                         placeholder="Bolo de cenoura"
                         placeholderTextColor="#aaa"
                         style={styles.input}
                     />
-                    <Text style={styles.titleInput}>Preço do produto</Text>
-                    <TextInput
-                        placeholder="R$ 30,00"
-                        placeholderTextColor="#aaa"
-                        keyboardType='numeric'
-                        style={styles.input}
-                    />
-                    <Text style={styles.titleInput}>Título do produto</Text>
-                    <TextInput
-                        placeholder="Bolo de cenoura"
-                        placeholderTextColor="#aaa"
-                        style={styles.input}
-                    />
-                    <Text style={styles.titleInput}>Preço do produto</Text>
-                    <TextInput
-                        placeholder="R$ 30,00"
-                        placeholderTextColor="#aaa"
-                        keyboardType='numeric'
-                        style={styles.input}
-                    />
-                    <Text style={styles.titleInput}>Título do produto</Text>
-                    <TextInput
-                        placeholder="Bolo de cenoura"
-                        placeholderTextColor="#aaa"
-                        style={styles.input}
-                    />
-                    <Text style={styles.titleInput}>Preço do produto</Text>
-                    <TextInput
-                        placeholder="R$ 30,00"
-                        placeholderTextColor="#aaa"
-                        keyboardType='numeric'
-                        style={styles.input}
-                    />
+                    <Text style={styles.titleInput}>
+                        Images
+                    </Text>
+                    <View style={{flexDirection: 'row'}}>
+                        <TouchableOpacity
+                            style={{width: '33.33%', alignSelf: 'flex-start', marginHorizontal: 3}}
+                        >
+                            <Image style={styles.productImage} source={{uri: fundo}} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{width: '33.33%', alignSelf: 'center', marginHorizontal: 3}}
+                        >
+                            <Image style={styles.productImage} source={{uri: fundo}} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{width: '33.33%', alignSelf: 'flex-end', marginHorizontal: 3}}
+                        >
+                            <Image
+                                style={styles.productImage}
+                                source={{uri: fundo}}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+                <TouchableOpacity style={styles.btn}>
+                    <Text style={styles.textBtn}>Criar Produto</Text>
+                </TouchableOpacity>
             </ScrollView>
             </KeyboardAwareScrollView>
-        </SafeAreaView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.white,
-    },
     header: {
+        padding: 15,
+        paddingVertical: 20,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: Colors.white,
@@ -109,6 +107,7 @@ const styles = StyleSheet.create({
         marginBottom: 5
     },
     title: {
+        width: '80%',
         color: Colors.primary,
         fontSize: 18,
         fontWeight: 'bold',
@@ -137,9 +136,24 @@ const styles = StyleSheet.create({
         paddingLeft: 5,
         fontSize: 16,
         color: Colors.primary,
-
-    }
+    },
+    productImage: {
+        width: '100%',
+        height: 100,
+    },
+    btn: {
+        width: '100%',
+        height: 60,
+        backgroundColor: Colors.primary,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    textBtn: {
+        fontSize: 16,
+        color: 'white',
+        fontWeight: 'bold',
+    },
 });
-
 
 export default NewProduct;

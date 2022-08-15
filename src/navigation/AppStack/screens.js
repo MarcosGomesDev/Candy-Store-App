@@ -8,11 +8,26 @@ import SellerLogin from '../../screens/SellerScreens/SellerLogin';
 import NewProduct from '../../screens/SellerScreens/NewProduct';
 import EditProduct from '../../screens/SellerScreens/EditProduct';
 import ForgotPassword from '../../screens/ForgotPassword';
+import resetPassword from '../../screens/resetPassword'
+import VerifyToken from '../../screens/VerifyToken';
+import ResultSearch from '../../screens/ResultSearch';
 
 export default [
     {
         name: 'Login',
         component: Login,
+    },
+    {
+        name: 'ForgotPassword',
+        component: ForgotPassword
+    },
+    {
+        name: 'VerifyToken',
+        component: VerifyToken
+    },
+    {
+        name: 'resetPassword',
+        component: resetPassword
     },
     {
         name: 'SellerLogin',
@@ -47,7 +62,7 @@ export default [
         component: Seller
     },
     {
-        name: 'ForgotPassword',
-        component: ForgotPassword
-    }
+        name: 'ResultSearch',
+        component: ResultSearch,
+    },
 ]

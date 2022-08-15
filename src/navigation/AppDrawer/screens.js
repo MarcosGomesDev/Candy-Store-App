@@ -1,5 +1,9 @@
 import React from 'react'
 
+import { getData } from '../../utils/storage'
+
+const user = getData().then()
+
 import Main from '../../screens/Main'
 import Profile from '../../screens/Profile'
 import Settings from '../../screens/Settings'

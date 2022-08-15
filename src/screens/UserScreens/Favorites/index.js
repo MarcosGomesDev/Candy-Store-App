@@ -1,32 +1,35 @@
-//import liraries
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, ScrollView, Text, StyleSheet,
-Image, TouchableOpacity } from 'react-native';
-import { DrawerActions } from '@react-navigation/native';
+import { View, ScrollView, Text, StyleSheet,
+Image } from 'react-native';
+import {useDispatch} from 'react-redux'
 
+import { DrawerActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 
+import {showToast} from '../../../store/modules/toast/actions'
 import { getData } from '../../../utils/storage'
 
 import api from '../../../services/api'
-
+import Container from '../../../components/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Colors from '../../../styles/Colors'
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
-// create a component
 const Favorites = (props) => {
+    const dispatch = useDispatch()
     const navigation = useNavigation()
     const [favorites, setFavorites] = useState([])
 
     const remove = async(item) => {
         const userId = await getData().then()
         try {
-            await api.delete('/user/favorites/delete', {params: {
+            const res = await api.delete('/user/favorites/delete', {params: {
                 userId: userId.id,
                 productId: item._id
             }})
-        } catch (error) {
-            
+            dispatch(showToast(res.data, 'success', 'favorite'))
+        } catch (error) { 
+            dispatch(showToast(error.response.data, 'error', 'favorite'))
         }
     }
 
@@ -36,11 +39,12 @@ const Favorites = (props) => {
             const res = await api.get('/user/favorites', {params: {userId: user.id}})
             setFavorites(res.data)
         }
+
         loadFavorites()
     }, [favorites])
 
     return (
-        <SafeAreaView style={styles.container}>
+        <Container>
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}
@@ -60,9 +64,12 @@ const Favorites = (props) => {
                     <View style={styles.marginContainer}>
                         {favorites.map((item) => (
                             <TouchableOpacity
-                                key={item._id} 
-                                style={styles.productBtn} 
-                                onPress={() => navigation.navigate('ProductItem', item)}
+                                key={item._id}
+                                style={styles.productBtn}
+                                
+                                onPress={() => {
+                                    navigation.navigate('ProductItem', item)
+                                }}
                             >
                                 <View style={styles.productItem}>
                                     <Image
@@ -70,8 +77,18 @@ const Favorites = (props) => {
                                         source={{uri: item.images[0]}}
                                     />
                                     <View style={styles.descriptions}>
-                                        <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
-                                        <Text style={styles.productPrice}>R$ {item.price}</Text>
+                                        <Text
+                                            numberOfLines={1}
+                                            style={styles.productName}
+                                        >
+                                            {item.name}
+                                        </Text>
+                                        <Text style={[styles.productName, {fontSize: 14, marginBottom: 5}]}>
+                                            {item.seller.name}
+                                        </Text>
+                                        <Text style={styles.productPrice}>
+                                            R$ {item.price}
+                                        </Text>
                                     </View>
                                     <TouchableOpacity
                                         onPress={() => remove(item)}
@@ -84,23 +101,19 @@ const Favorites = (props) => {
                     </View>
                 </ScrollView>
             }
-        </SafeAreaView>
+        </Container>
     );
 };
 
-// define your styles
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
     header: {
         padding: 15,
         paddingVertical: 20,
         flexDirection: 'row',
         backgroundColor: Colors.white,
         shadowColor: Colors.black,
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.6,
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.8,
         elevation: 1,
         zIndex: 1,
     },
@@ -115,6 +128,9 @@ const styles = StyleSheet.create({
     productContainer: {
         marginHorizontal: 10
     },
+    marginContainer: {
+        marginTop: 10
+    },
     productBtn: {
         backgroundColor: Colors.white,
         paddingVertical: 10,
@@ -122,10 +138,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         justifyContent: 'center',
         borderRadius: 10,
-        shadowColor: Colors.black,
-        shadowOffset: {width: 0, height: 0},
-        shadowOpacity: 0.5,
-        elevation: 5,
+        borderWidth: 1,
+        borderColor: Colors.primary,
     },
     productItem: {
         flexDirection: 'row',
@@ -137,21 +151,19 @@ const styles = StyleSheet.create({
         borderRadius: 10
     },
     descriptions: {
-        justifyContent: 'space-around',
+        justifyContent: 'center',
         alignItems: 'flex-end'
     },
     productName: {
         fontSize: 18,
-        color: Colors.primary
+        color: Colors.primary,
+        marginBottom: 5
     },
     productPrice: {
         fontSize: 20,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        color: '#000'
     },
-    marginContainer: {
-        marginTop: 10
-    }
 });
-
 
 export default Favorites;

@@ -72,5 +72,7 @@
 	<string>Octicons.ttf</string>
 	<string>Zocial.ttf</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Permissão para acessar sua galeria</string>
 </dict>
 </plist>

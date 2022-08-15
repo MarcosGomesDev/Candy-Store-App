@@ -20,8 +20,8 @@ function AppDrawer() {
                             drawerLabelStyle: {fontSize: 15},
                             drawerActiveTintColor: Colors.primary,
                             drawerActiveBackgroundColor: Colors.secondary,
-                            drawerItemStyle: {height: 55, width: '100%', justifyContent: 'center', marginLeft: 0, 
-                            borderRadius: 0, paddingLeft: 10, marginTop: 0}
+                            drawerItemStyle: {height: 55, width: '100%', justifyContent: 'center',
+                            marginLeft: 0, borderRadius: 0, paddingLeft: 10, marginTop: 0}
                         }}
                 />
             )}

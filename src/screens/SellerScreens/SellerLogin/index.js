@@ -1,248 +1,203 @@
-//import liraries
-import React, {useState} from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Modal, TouchableOpacity,
-Alert, ActivityIndicator } from 'react-native';
-import {Formik} from 'formik'
-import * as Yup from 'yup'
+import React, {useState, createRef, useEffect} from 'react';
+import { View, Text, StyleSheet,
+TouchableOpacity, ActivityIndicator } from 'react-native';
 
-import {isValidObjField, isValidEmail, updateError} from '../../../utils/validators'
+import {showToast} from '../../../store/modules/toast/actions'
+import {useDispatch} from 'react-redux'
 
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import Container from '../../../components/Container';
 import Colors from '../../../styles/Colors'
-
-import FormBase from '../../../components/FormBase'
-import FormContainer from '../../../components/FormContainer'
-import FormInput from '../../../components/FormInput';
-import FormPassword from '../../../components/FormPassword'
-import FormButton from '../../../components/FormButton'
-
+import Input from '../../../components/Input';
 import api from '../../../services/api'
+
+import { useLogin } from '../../../context/LoginProvider';
+import { widthPercent, heightPercent } from '../../../utils/dimensions';
+import {isValidEmail} from '../../../utils/validators'
 import { storeData, getData } from '../../../utils/storage';
 
-const validationSchema = Yup.object({
-    email: Yup.string().email('email inválido!').required('email é obrigatório!'),
-    password: Yup.string().trim().min(3, 'Insira uma senha com 3 carat ou mais').required('senha é obrigatória!')
-})
-
-// create a component
 const SellerLogin = ({navigation}) => {
-    const [modalVisible, setModalVisible] = useState(false);
+    const {setIsLoggedIn, setProfile} = useLogin()
+    const dispatch = useDispatch()
     const [load, setLoad] = useState(false)
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
 
-    const userInfo = {
-        email: '',
-        password: ''
-    }
+    const emailInput = createRef()
+    const passInput = createRef()
 
-    const [error, setError] = useState('')
+    useEffect(() => {
+        emailInput.current.resetError()
+        passInput.current.resetError()
+    }, [email, password])
 
-    const {email, password} = userInfo
+    const signIn = async () => {
+        if(email === '') {
+            dispatch(showToast('Por favor insira o email', 'error', 'person'))
+            emailInput.current.focusOnError()
+            return
+        }
 
-    const handleOnChangeText = (value, fieldName) => {
-        setUserInfo({...userInfo, [fieldName]: value})
-    }
-    
-    const isValidForm = () => {
-        if(!isValidObjField(userInfo)) 
-            return updateError('Preencha todos os campos!', setError)
-        if(!isValidEmail(email)) 
-            return updateError('email inválido!', setError)
-        if(!password.trim() || password.length < 3) 
-            return updateError('utilize uma senha com 3 ou mais caract!', setError)
-        
-        return true
-    }
+        if(!isValidEmail(email)) {
+            dispatch(showToast('Email inválido!', 'error', 'person'))
+            emailInput.current.focusOnError()
+            return
+        }
 
-    const submitForm = () => {
-        if(isValidForm())
+        if(password === '') {
+            dispatch(showToast('Por favor insira a senha', 'error', 'lock'))
+            passInput.current.focusOnError()
+            return
+        }
 
-        console.log(userInfo)
-    }
+        // if(password.length < 8) {
+        //     dispatch(showToast('Muito curta, a senha precisa ter 8 caracteres', 'error', 'lock'))
+        //     passInput.current.focusOnError()
+        //     return
+        // }
 
-    const signIn = async (values, formikActions) => {
         try {
             setLoad(true)
-            const res = await api.post('/sign-in/seller', {
-                ...values
-            })
-            if(res.data.err) {
-                Alert.alert('Erro', res.data.err)
-            } else {
+            const response = await api.post('/sign-in/seller', {email, password})
             const userInfo = {
-                id: res.data.seller._id,
-                name: res.data.seller.name,
-                email: res.data.seller.email,
-                avatar: res.data.seller.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
-                token: res.data.token,
+                id: response.data.seller._id,
+                name: response.data.seller.name,
+                email: response.data.seller.email,
+                seller: response.data.seller.seller,
+                avatar: response.data.seller.avatar ?? 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
+                token: response.data.token,
             }
-
             await storeData(userInfo)
-            formikActions.resetForm()
-            formikActions.setSubmitting(false)
-            }
-        } catch (error) {
-            
-        } finally {
             setLoad(false)
-            Alert.alert('Sucesso', 'Acesso liberado', [{onPress: () => navigation.navigate('Main')}])
+            setEmail('')
+            setPassword('')
+            setProfile(userInfo)
+            setIsLoggedIn(true)
+        } catch (error) {
+            setTimeout(() => {
+                setLoad(false)
+            }, 90);
+            dispatch(showToast(error.response.data, 'error', 'person'))
         }
     }
 
     return (
-        <FormBase>
-            <Formik 
-                initialValues={userInfo} 
-                validationSchema={validationSchema}
-                onSubmit={signIn}
-            >
-                {({values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit}) => {
-                    const {email, password} = values
-                    return (
-                        <FormContainer style={{height: 400}}>
-                            <Text style={styles.title}
-                            >
-                                Bem Vindo
-                            </Text>
-                            <FormInput 
-                                label="Email"
-                                name="mail-outline"
-                                placeholder='email'
-                                placeholderTextColor='#dcdcdc'
-                                autoCapitalize='none'
-                                value={email}
-                                error={touched.email && errors.email}
-                                onBlur={handleBlur('email')}
-                                onChangeText={handleChange('email')}
-                            />
-                            <FormPassword 
-                                label='Senha'
-                                placeholder='********'
-                                placeholderTextColor='#dcdcdc'
-                                value={password}
-                                error={touched.password && errors.password}
-                                onBlur={handleBlur('password')}
-                                onChangeText={handleChange('password')}
-                            />
-                            <FormButton 
-                                title={load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Entrar'}
-                                submitting={isSubmitting} 
-                                onPress={handleSubmit} 
-                            />
-
-                            <TouchableOpacity 
-                                onPress={() => navigation.navigate('ForgotPassword')} 
-                                style={{alignItems: 'center', marginTop: 17}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Esqueceu a senha?</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                onPress={() => setModalVisible(true)} 
-                                style={{alignItems: 'center', marginTop: 20}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Não possui conta? Cadastre-se</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                onPress={() => navigation.navigate('Login')} 
-                                style={{alignItems: 'center', marginTop: 20}}
-                            >
-                                <Text style={
-                                    {color: Colors.primary, fontSize: 17, textDecorationLine: 'underline'}
-                                }>Entrar como usuário</Text>
-                            </TouchableOpacity>
-                        </FormContainer>
-                    )
-                }}
-            </Formik>
-            <Modal 
-                visible={modalVisible}
-                animationType='slide'
-            >
-                <SafeAreaView style={styles.modal}>
-                    <View style={styles.contentModal}>
-                        <TouchableOpacity 
-                            style={styles.backBtn} 
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Icon name="clear" size={36} color={Colors.primary} style={{fontWeight: 'bold'}} />
-                        </TouchableOpacity>
-                        <Text style={styles.title}>Cadastrar como:</Text>
-                        <TouchableOpacity style={styles.btn} 
-                            onPress={() => {
-                                setModalVisible(false)
-                                navigation.navigate('UserRegister')
-                            }
-                        }>
-                            <Text style={styles.textBtn}>Usuário</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={styles.btn}
-                            onPress={() => {
-                                setModalVisible(false)
-                                navigation.navigate('SellerRegister')
-                            }
-                        }>
-                            <Text style={styles.textBtn}>Vendedor</Text>
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </Modal>
-        </FormBase>
+        <Container>
+            <View style={styles.header}>
+                <View style={styles.headerContent}>
+                    <Text style={styles.title}>Olá,</Text>
+                    <Text style={styles.title}>Bem-vindo de volta!</Text>
+                </View>
+            </View>
+            <View style={styles.mainContent}>
+                <Text
+                    style={{alignSelf: 'flex-start', paddingLeft: 40, fontSize: 26, color: Colors.primary,
+                    fontWeight: 'bold', marginTop: 10}}
+                >Login</Text>
+                <Input
+                    title="Email"
+                    ref={emailInput}
+                    placeholder='email@exemplo.com'
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={email}
+                    onChangeText={setEmail}
+                    iconName={'person'}
+                    keyboardType="email-address"
+                />
+                <Input
+                    title="Senha"
+                    ref={passInput}
+                    placeholder='********'
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={password}
+                    onChangeText={setPassword}
+                    iconName={'lock'}
+                    secureTextEntry
+                />
+                <TouchableOpacity style={styles.forgotBtn}>
+                    <Text style={styles.forgotBtnText}>Esqueceu a senha?</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={signIn}
+                    style={styles.btn}
+                >
+                    <Text style={styles.textBtn}>{load ? <ActivityIndicator size={"small"} color={Colors.white} /> : 'Entrar'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('Login')}
+                    style={{marginTop: 20, marginBottom: 50}}
+                >
+                    <Text style={[styles.forgotBtnText, {fontWeight: '600'}]}>Entrar como usuário</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.bntRegister}
+                    onPress={() => navigation.navigate('SellerRegister')}
+                >
+                <Text style={styles.forgotBtnText}>
+                    Não possui conta? Cadastre-se
+                </Text>
+                </TouchableOpacity>
+            </View>
+        </Container>
     );
 };
 
 const styles = StyleSheet.create({
+    header: {
+        backgroundColor: Colors.secondary,
+        height: heightPercent('25%'),
+        borderBottomRightRadius: 35,
+        justifyContent: 'flex-end'
+    },
+    headerContent: {
+        marginBottom: 50
+    },
     title: {
         color: Colors.primary,
-        paddingBottom: 20,
-        paddingLeft: 10,
+        paddingLeft: 20,
         fontWeight: 'bold',
-        textAlign: 'center', 
+        textAlign: 'left', 
         fontSize: 26,
-        marginTop: 20
+    },
+    mainContent: {
+        alignItems: 'center',
+        marginTop: 10,
+        flex: 1
+    },
+    inputContainer: {
+        alignContent: 'center',
+        flexDirection: 'row',
+        marginTop: 40,
+        borderBottomWidth: 1,
+        paddingBottom: 7,
+        paddingHorizontal: 10,
+        width: '80%'
+    },
+    forgotBtn: {
+        marginTop: 18,
+        alignSelf: 'flex-end',
+        marginRight: 35
+    },
+    forgotBtnText: {
+        color: Colors.primary
     },
     btn: {
-        width: 280,
-        paddingVertical: 25,
+        width: '80%',
+        height: 60,
         backgroundColor: Colors.primary,
         borderRadius: 15,
         marginVertical: 20,
         alignItems: 'center',
+        justifyContent: 'center'
     },
     textBtn: {
         fontSize: 16,
         color: 'white',
         fontWeight: 'bold',
     },
-    modal: {
-        flex: 1,
-        backgroundColor: Colors.secondary,
-        justifyContent: 'center',
+    bntRegister: {
         alignItems: 'center',
-    },
-    backBtn: {
-        alignSelf: 'flex-end',
-        padding: 10
-
-    },
-    contentModal: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.background,
-        width: '80%',
-        height: 'auto',
-        borderRadius: 20,
-        shadowColor: Colors.black,
-        shadowOffset: {
-            width: 0,
-            height: 7,
-        },
-        shadowOpacity: 0.43,
-        shadowRadius: 9.51,
-        elevation: 15,
     }
 });
 

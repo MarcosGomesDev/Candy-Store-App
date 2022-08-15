@@ -5,7 +5,7 @@ export const storeData = async (value) => {
       const jsonValue = JSON.stringify(value)
       await AsyncStorage.setItem('@user_info', jsonValue)
     } catch (e) {
-      // saving error
+      
     }
 }
 
@@ -17,4 +17,31 @@ export const getData = async () => {
     } catch(e) {
       // error reading value
     }
+}
+
+export const removeData = async () => {
+    try {
+      await AsyncStorage.removeItem('@user_info')
+    } catch(e) {
+      // error reading value
+    }
+}
+
+export const storeLocation = async (value) => {
+  try {
+    const jsonValue = JSON.stringify(value)
+    await AsyncStorage.setItem('@user_location', jsonValue)
+  } catch (error) {
+    
+  }
+}
+
+export const getLocation = async () => {
+  try {
+    const jsonValue = await AsyncStorage.getItem('@user_location')
+
+    return jsonValue !== null ? JSON.parse(jsonValue) : null;
+  } catch (error) {
+    
+  }
 }
