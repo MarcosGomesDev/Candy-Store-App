@@ -16,7 +16,7 @@ import Container from '../../components/core/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colors from '../../styles/Colors';
 import Input from '../../components/Input';
-import api from '../../services/api';
+import {api} from '../../services/api';
 import {heightPercent} from '../../utils/dimensions';
 
 const ForgotPassword = () => {
@@ -30,6 +30,7 @@ const ForgotPassword = () => {
   useEffect(() => {
     emailInput.current.resetError();
   }, [email]);
+
 
   const sendEmail = async () => {
     setIsLoading(true);
@@ -47,17 +48,15 @@ const ForgotPassword = () => {
       return;
     }
 
-    try {
-      const response = await api.post('/forgot-password', {email});
-      dispatch(showToast(response.data, 'success', 'email'));
-      setIsLoading(false);
-      setTimeout(() => {
-        navigation.navigate('VerifyToken', email);
-      }, 2000);
-    } catch (error) {
-      dispatch(showToast(error.response.data, 'error', 'error'));
-      setIsLoading(false);
-    }
+      await api.userForgotPassword(email).then((data) => {
+        dispatch(showToast(data, 'success', 'email'));
+        setIsLoading(false);
+        setTimeout(() => {
+          navigation.navigate('VerifyToken', email);
+        }, 1500);
+      }).catch((error) => {
+        dispatch(showToast(error.response.data, 'error', 'error'));
+      })
   };
 
   return (

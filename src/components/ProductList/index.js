@@ -8,10 +8,8 @@ import ProductListItem from './ProductListItem';
 import {api} from '../../services/api'
 import { widthPercent } from '../../utils/dimensions';
 import { useQuery } from '@tanstack/react-query';
-import useProducts from '../../hooks/useProducts'
 
 const ProductList = () => {
-    const [products] = useProducts()
     const navigation = useNavigation()
     const {data, isError, isLoading} =useQuery(['product-list'], api.getProducts)
     return (

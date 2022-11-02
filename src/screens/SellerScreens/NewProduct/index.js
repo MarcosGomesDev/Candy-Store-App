@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   TouchableOpacity,
@@ -17,66 +17,32 @@ import {useNavigation} from '@react-navigation/native';
 import {showToast} from '../../../store/modules/toast/actions';
 import {removeData} from '../../../utils/storage';
 import {useDispatch} from 'react-redux';
-import {URL} from '@env';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../../services/api';
 
 const NewProduct = () => {
   const {profile, setIsLoggedIn} = useLogin();
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient()
 
-  async function createProduct(product) {
-    if (
-      product.name === '' ||
-      product.price === '' ||
-      product.category === '' ||
-      product.subcategory === '' ||
-      product.images === ''
-    ) {
-      dispatch(showToast('Preencha todos os campos!', 'error', 'error'));
-      return;
-    }
-
-    const data = new FormData();
-    Object.keys(product).forEach(key => {
-      if (key === 'images') {
-        for (let i = 0; i < product[key].length; i++) {
-          data.append('images', {
-            name: new Date() + 'product',
-            uri: product[key][i].uri,
-            type: product[key][i].type,
-          });
-        }
-      } else {
-        data.append(key, product[key]);
+  const {mutate, isLoading} = useMutation((product) => api.addProduct(product, profile.token), {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['products-list'])
+      dispatch(showToast(data, 'success', 'done'))
+      navigation.goBack()
+    },
+    onError: (error) => {
+      const status = error.request.status
+      const messageError = error.response.data
+      console.log(messageError)
+      if(status === 413) {
+        dispatch(showToast(messageError, 'error', 'error'))
+        removeData();
+        setIsLoggedIn(false);
       }
-    });
-
-    setLoading(true);
-    const response = await fetch(`http://192.168.15.254:3003/product/create`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'content-type': 'multipart/form-data',
-        authorization: `Bearer ${profile.token}`,
-      },
-      body: data,
-    });
-
-    const res = await response.json();
-
-    if (response.status === 201) {
-      setLoading(false);
-      dispatch(showToast(res, 'success', 'done'));
-      navigation.goBack();
     }
-    if (response.status === 413) {
-      setLoading(false);
-      dispatch(showToast(res, 'error', 'error'));
-      removeData();
-      setIsLoggedIn(false);
-    }
-  }
+  })
 
   return (
     <Container color="#fff">
@@ -96,9 +62,9 @@ const NewProduct = () => {
         <Text style={styles.title}>Criar Produto</Text>
       </View>
       <Form
-        handleSubmit={createProduct}
+        handleSubmit={(product) => mutate(product)}
         titleBtn={
-          loading ? (
+          isLoading ? (
             <ActivityIndicator size={24} color={Colors.white} />
           ) : (
             'Criar produto'

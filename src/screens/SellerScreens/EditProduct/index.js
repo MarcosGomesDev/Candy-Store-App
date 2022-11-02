@@ -11,82 +11,39 @@ import Container from '../../../components/core/Container';
 import Form from '../../../components/FormProduct';
 import Colors from '../../../styles/Colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../../services/api';
 
 const EditProduct = ({route}) => {
-    const dispatch = useDispatch()
-    const {profile, setIsLoggedIn} = useLogin()
-    const navigation = useNavigation()
-    const [loading, setLoading] = useState(false)
     const item = route.params
+    const dispatch = useDispatch()
+    const queryClient = useQueryClient()
+    const navigation = useNavigation()
+    const {profile, setIsLoggedIn} = useLogin()
 
-    const save = async (product) => {
-        if (
-            product.name === '' ||
-            product.price === '' ||
-            product.category === '' ||
-            product.subcategory === '' ||
-            product.images === ''
-        ) {
-            dispatch(showToast('Preencha todos os campos!', 'error', 'error'));
-            return;
-        }
-
-        const exist = product.images[0].hasOwnProperty('type')
-
-        const data = new FormData();
-        
-        Object.keys(product).forEach(key => {
-            if (key === 'images') {
-                for (let i = 0; i < product[key].length; i++) {
-                    if(exist === true) {
-                        data.append('images', {
-                            name: new Date() + 'product',
-                            uri: product[key][i].uri,
-                            type: product[key][i].type,
-                        });
-                    } else {
-                        data.append('images', product[key][i])
-                    }
-                }
-            } else {
-                data.append(key, product[key]);
-            }
-        });
-
-        console.log(data)
-
-        setLoading(true);
-        const response = await fetch(`http://192.168.15.254:3003/product/${product._id}/update`, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'content-type': 'multipart/form-data',
-                authorization: `Bearer ${profile.token}`,
-            },
-            body: data,
-        });
-
-        const res = await response.json();
-
-        console.log(response.status)
-        if (response.status === 201) {
-            setLoading(false);
-            dispatch(showToast(res, 'success', 'done'));
-            navigation.goBack();
-        }
-        if (response.status === 413) {
-            setLoading(false);
-            dispatch(showToast(res, 'error', 'error'));
+    const {mutate, isLoading} = useMutation((product) => api.editProduct(product, profile.token), {
+    onSuccess: (data) => {
+        queryClient.invalidateQueries(['products-list'])
+        dispatch(showToast(data, 'success', 'done'))
+        navigation.goBack()
+    },
+    onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+            dispatch(showToast(messageError, 'error', 'error'))
             removeData();
             setIsLoggedIn(false);
         }
     }
+    })
 
     return (
         <Container color='#fff'>
             <View style={styles.header}>
                 <TouchableOpacity
-                    style={{zIndex: 10}}
+                    style={{zIndex: 10, backgroundColor: 'red', height: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10}}
                     onPress={navigation.goBack}
                 >
                     <Icon name="arrow-back"
@@ -100,12 +57,12 @@ const EditProduct = ({route}) => {
             </View>
             <Form
                 productData={item}
-                titleBtn={loading ? (
+                titleBtn={isLoading ? (
                     <ActivityIndicator 
                         size={24}
                         color={Colors.white}
                     />) : 'Salvar'}
-                handleSubmit={save}
+                handleSubmit={(product) => mutate(product)}
             />
         </Container>
     );
@@ -117,17 +74,16 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.white
     },
     header: {
-        padding: 15,
-        paddingVertical: 20,
+        height: 60,
         flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: Colors.white,
+        alignItems: 'center',
         shadowColor: Colors.black,
-        shadowOffset: {width: 0, height: 3},
-        shadowOpacity: 0.8,
-        elevation: 15,
-        zIndex: 15,
-        marginBottom: 5
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.6,
+        elevation: 10,
+        zIndex: 10,
+        width: '100%',
     },
     title: {
         width: '80%',

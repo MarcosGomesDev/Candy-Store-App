@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-start'
   },
   input: {
     width: '100%',

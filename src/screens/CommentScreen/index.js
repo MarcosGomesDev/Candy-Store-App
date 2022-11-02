@@ -1,5 +1,6 @@
 import React, {useRef, useState, useEffect} from 'react';
-import {Alert, Text, ScrollView, View, StyleSheet, TouchableOpacity, TextInput, Image} from 'react-native';
+import {Text, ScrollView, View, StyleSheet, TouchableOpacity,
+ActivityIndicator, Keyboard} from 'react-native';
 import Container from '../../components/core/Container';
 import Colors from '../../styles/Colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -7,98 +8,89 @@ import {showToast} from '../../store/modules/toast/actions';
 import {useDispatch} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import { useLogin } from '../../context/LoginProvider';
-import {Picker} from '@react-native-picker/picker';
-import {URL} from '@env';
+import CommentCard from './CommentCard';
+import RatingPicker from './RatingPicker';
+import FooterInput from './FooterInput';
+import axios from 'axios'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../services/api';
 
 const ModalComment = ({route}) => {
-  const item = route.params
+  const id = route.params
   const {profile} = useLogin()
   const dispatch = useDispatch();
-  const avatar = 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png'
   const navigation = useNavigation()
-  const [height, setHeight] = useState(50);
+  const queryClient = useQueryClient()
   const [showReply, setShowReply] = useState(false)
-  const [rating_selected, setRating] = useState('')
+  const [rating, setRating] = useState(1)
+  const [maxRating, setMaxRating] = useState([1,2,3,4,5])
   const [replyTo, setReplyTo] = useState('')
   const [comment, setComment] = useState('')
+  const [idComment, setIdComment] = useState('')
 
-  const textInput = useRef()
-  console.log(item)
-  useEffect(() => {
-    this.ref.focus()
-  }, [])
+  console.log(idComment)
 
-  const sendComment = async () => {
-    if(rating_selected === '') {
-      dispatch(showToast('A nota é obrigatória', 'error', 'error'))
-      return
+  const {data, isLoading, isError} = useQuery(['comment-list'], () => api.getAllCommments(id), {
+    onError: (error) => {
+      const status = error.request.status
+      const messageError = error.response.data
+      if(status === 413) {
+        dispatch(showToast(messageError, 'error', 'error'))
+        removeData();
+        setIsLoggedIn(false);
+      }
     }
+  })
 
-    const existRating = item.item?.map(({userId}) => userId._id).includes(profile.id)
-    if(existRating) {
-      dispatch(showToast('Sua avaliação anterior será excluída', 'warn', 'warning'))
+  const {mutate: deleteComment} = useMutation(() => api.removeComment(id, profile.token), {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['comment-list'])
+      queryClient.invalidateQueries(['product'])
+      dispatch(showToast(data, 'success', 'done'))
+    },
+    onError: (error) => {
+      const status = error.request.status
+      const messageError = error.response.data
+      if(status === 413) {
+        dispatch(showToast(messageError, 'error', 'error'))
+        removeData();
+        setIsLoggedIn(false);
+      }
     }
+  })
 
-    const data = {comment, rating_selected}
+  const {mutate: addComent} = useMutation(() => api.addComment(id, profile.token, comment, rating), {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['comment-list'])
+      queryClient.invalidateQueries(['product'])
+      setComment('')
+      setRating(1)
+      Keyboard.dismiss()
+      dispatch(showToast(data, 'success', 'done'))
+    },
+    onError: (e) => console.log(e.response.data)
+  })
 
-    const response = await fetch(`${URL}/product/${item.id}/rating`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        authorization: `Bearer ${profile.token}`
-      },
-      body: JSON.stringify(data)
-    }).catch((err) => console.log(err))
-
-    const res = await response.json()
-
-    if(response.status === 201) {
-      dispatch(showToast(res, 'success', 'done'))
-      navigation.goBack()
+  const {mutate: addReplyComment} = useMutation(() => api.addReplyComment(idComment, profile.token, comment), {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['comment-list'])
+      setComment('')
+      setShowReply(false)
+      setRating(1)
+      Keyboard.dismiss()
+      dispatch(showToast(data, 'success', 'done'))
     }
+  })
 
-    if(response.status === 400) {
-      dispatch(showToast(res, 'error', 'error'))
-    }
-
-    if(response.status === 500) {
-      dispatch(showToast(res, 'error', 'error'))
-    }
-  }
-
-  const replyComment = async (id, name) => {
+  const reply = async (id, name) => {
     setShowReply(true)
+    setIdComment(id)
     setReplyTo(name)
   }
 
   const cancelReplyComment = () => {
     setShowReply(false)
     setReplyTo('')
-  }
-
-  const removeComment = async () => {
-    const response = await fetch(`http://192.168.15.254:3003/product/${item.id}/rating/delete`, {
-      method: 'DELETE',
-      headers: {
-        authorization: `Bearer ${profile.token}`
-      }
-    }).catch((err) => console.log(err))
-
-    const res = await response.json()
-
-    if(response.status === 200) {
-      dispatch(showToast(res, 'success', 'done'))
-      navigation.goBack()
-    }
-
-    if(response.status === 400) {
-      dispatch(showToast(res, 'error', 'error'))
-    }
-
-    if(response.status === 500) {
-      dispatch(showToast(res, 'error', 'error'))
-    }
   }
 
   return (
@@ -112,118 +104,57 @@ const ModalComment = ({route}) => {
           <Text style={styles.title}>Comentários</Text>
         </View>
 
-        <ScrollView style={{flex: 1}}>
-          {item.item?.length > 0 ? (
-            item.item?.map(result => (
-                <View key={result => result._id} style={styles.commentContainer}>
-                  <View style={{width: '100%'}}>
-                    <View style={styles.commentContent}>
-                      <View style={{flexDirection: 'row', alignItems: 'center', width: '90%'}}>
-                        <View style={{borderRadius: 150, paddingRight: 15}}>
-                          <Image source={{uri: result.userId.avatar || avatar}} 
-                            style={{width: 40, height: 40, borderRadius: 200}}
-                          />
-                        </View>
-                        <Text
-                          style={styles.userName}>
-                          {result.userName}
-                        </Text>
-                        <Text style={{color: Colors.primary, fontSize: 15}}>
-                          {result.productReview}
-                        </Text>
-                      </View>
-                      {profile.id === result.userId._id && (
-                        <View style={{flexDirection: 'row', justifyContent: 'center'}}>
-                          <TouchableOpacity
-                            onPress={() => removeComment()}
-                            style={{alignItems: 'center', justifyContent: 'center'}}
-                          >
-                            <Icon name="close" size={24} color={Colors.primary} />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+        {isLoading && (
+          <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
+        )}
 
-                    {profile.seller === true && (
-                      <TouchableOpacity
-                        style={styles.replyBtn}
-                        onPress={() => replyComment(result._id, result.userName)}
-                      >
-                        <Text style={styles.replyBtnText}>Responder</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-            ))
-          ) : (<></>)}
+        <ScrollView style={{flex: 1}}>
+          {data ? data.map((comment) => {
+            return (
+              <CommentCard
+                key={comment}
+                data={comment}
+                replyComment={() => reply(comment._id, comment.userName)}
+                onRemoveComment={() => deleteComment()}
+              />
+            )}): null}
         </ScrollView>
 
         {showReply && (
-          <View style={[styles.footer, {height: 50, alignItems: 'center', paddingHorizontal: 15}]}>
-            <Text style={{fontSize: 15, flex: 1}}>Respondendo a {replyTo}</Text>
-            <TouchableOpacity
-              onPress={() => cancelReplyComment()}
-            >
-                <Icon size={24} color={Colors.white} name="close" />
-            </TouchableOpacity>
-          </View>
+            <View style={[styles.footer, {height: 50, alignItems: 'center', paddingHorizontal: 15}]}>
+                <Text style={{fontSize: 15, flex: 1, color: Colors.white}}>
+                    Respondendo a 
+                    <Text style={{fontWeight: 'bold', fontSize: 17}}> {replyTo}</Text>
+                </Text>
+                <TouchableOpacity
+                    onPress={() => cancelReplyComment()}
+                >
+                    <Icon size={24} color={Colors.white} name="close" />
+                </TouchableOpacity>
+            </View>
         )}
 
         {profile.seller === false && (
-          <View style={{flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15,
-          height: 50, backgroundColor: Colors.primary}}>
-          <Text style={{color: Colors.white, fontSize: 16, width: '30%'}}>Nota:</Text>
-          <Picker
-            dropdownIconRippleColor={Colors.white}
-            dropdownIconColor={Colors.white}
-            selectedValue={rating_selected}
-            onValueChange={(itemValue) => setRating(itemValue)}
-            mode='dropdown'
-            style={{color: Colors.white, width: '70%'}}
-          >
-            <Picker.Item label='Selecione uma nota' value='' />
-            <Picker.Item label='1' value='1' />
-            <Picker.Item label='2' value="2" />
-            <Picker.Item label='3' value="3" />
-            <Picker.Item label='4' value="4" />
-            <Picker.Item label='5' value="5" />
-          </Picker>
+          <View style={styles.containerRating}>
+          <Text style={styles.ratingTitle}>Nota:</Text>
+          <RatingPicker
+            defaultRating={rating}
+            onChangeRating={setRating}
+            maxRating={maxRating}
+            width={24}
+            height={24}
+          />
           </View>
         )}
 
-        <View style={[styles.footer, {height: height}]}>
-          <View style={{alignItems: 'center', justifyContent: 'center', paddingLeft: 10}}>
-            <Image
-              source={{uri: profile.avatar}}
-              style={{width: 40, height: 40, borderRadius: 150}}
-            />
-          </View>
-          <TextInput
-            ref={ref => this.ref = ref}
-            style={[styles.input, {height: height}]}
-            defaultValue={comment}
-            onChangeText={(text) => setComment(text)}
-            multiline={true}
-            maxLength={144}
-            onContentSizeChange={e => {
-              const changeHeight = e.nativeEvent.contentSize.height
-              if(changeHeight > 50) {
-                setHeight(changeHeight)
-              }
-            }}
-            placeholder="Adicione um comentário..."
-            placeholderTextColor={Colors.white}
-          />
-          <TouchableOpacity
-            onPress={() => sendComment()}
-            style={styles.publishBtn}
-            disabled={comment.length < 1 ? true : false}
-          >
-            <Text style={[styles.publishBtnText, {opacity: comment.length < 1 ? 0.3 : 1}]}>
-              Publicar
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <FooterInput
+          image={profile.avatar}
+          value={comment}
+          onChangeText={setComment}
+          onPress={() => {showReply ? addReplyComment() : addComent()}}
+        />
     </Container>
   );
 };
@@ -252,55 +183,24 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 3,
   },
-  commentContainer: {
-    paddingHorizontal: 10,
+  containerRating: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    paddingHorizontal: 15,
     height: 50,
+    backgroundColor: Colors.primary
   },
-  commentContent: {
-    height: 50,
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    width: '100%',
-  },
-  userName: {
-    fontWeight: 'bold',
-    color: Colors.primary,
-    fontSize: 15,
-    paddingRight: 10
-  },
-  replyBtn: {
-    marginLeft: '40%',
-    marginTop: -10,
-    width: 60
-  },
-  replyBtnText: {
-    color: Colors.grey,
-    fontSize: 12
+  ratingTitle: {
+    color: Colors.white,
+    fontSize: 16,
+    width: '30%',
+    flex: 1
   },
   footer: {
     flexDirection: 'row',
     width: '100%',
     backgroundColor: Colors.primary,
-  },
-  input: {
-    flex: 1,
-    paddingLeft: 20,
-    color: Colors.white,
-    backgroundColor: Colors.primary,
-    fontSize: 16
-  },
-  publishBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15
-  },
-  publishBtnText: {
-    color: Colors.white,
-    fontWeight: 'bold',
-  }
+},
 })
 
 export default ModalComment;

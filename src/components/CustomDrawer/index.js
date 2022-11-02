@@ -19,13 +19,13 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const CustomDrawer = props => {
   const {setIsLoggedIn, profile} = useLogin();
-
+  const avatar = 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png'
   return (
     <View style={styles.container}>
       <DrawerContentScrollView {...props}>
         <View style={styles.userContent}>
           <View style={{flexDirection: 'row', marginLeft: 25}}>
-            <Image style={styles.logo} source={{uri: profile.avatar}} />
+            <Image style={styles.logo} source={{uri: profile.avatar ?? avatar}} />
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{profile.name}</Text>
               <Text style={styles.userEmail}>{profile.email}</Text>
@@ -36,20 +36,21 @@ const CustomDrawer = props => {
       </DrawerContentScrollView>
       <View
         style={{
-          height: 60,
-          paddingLeft: 20,
-          borderTopWidth: 0.6,
-          alignItems: 'center',
-          borderTopColor: Colors.primary,
-          flexDirection: 'row',
+          
         }}>
-        <Icon name="logout" size={24} color={Colors.primary} style={{}} />
+        
         <TouchableOpacity
-          style={{}}
+          style={{height: 60,
+            paddingLeft: 20,
+            borderTopWidth: 0.6,
+            alignItems: 'center',
+            borderTopColor: Colors.primary,
+            flexDirection: 'row',}}
           onPress={() => {
             removeData();
             setIsLoggedIn(false);
           }}>
+            <Icon name="logout" size={24} color={Colors.primary} />
           <Text style={{color: '#656566', paddingLeft: 30}}>Sair</Text>
         </TouchableOpacity>
       </View>

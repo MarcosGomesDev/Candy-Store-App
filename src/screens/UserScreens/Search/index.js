@@ -3,11 +3,12 @@ import {ScrollView, View, TouchableOpacity, StyleSheet, Text, TextInput} from 'r
 
 import {useNavigation} from '@react-navigation/native';
 
+import {getLocation} from '../../../utils/storage'
 import useProducts from '../../../hooks/useProducts'
-import api from '../../../services/api'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Container from '../../../components/core/Container';
 import Colors from '../../../styles/Colors'
+import { useQuery } from '@tanstack/react-query';
 
 const Search = () => {
     const navigation = useNavigation()
@@ -35,7 +36,7 @@ const Search = () => {
         <Container>
             <View style={styles.header}>
                 <TouchableOpacity 
-                    style={{padding: 15}}
+                    style={styles.btnHeader}
                     onPress={goBack}
                 >
                     <Icon name="arrow-back" size={26} color={Colors.primary} />
@@ -43,18 +44,24 @@ const Search = () => {
                 <TextInput
                     style={styles.input}
                     onChangeText={(text) => setSearch(text)}
-                    defaultValue={search}
+                    value={search}
+                    returnKeyType="send"
                     placeholder='Procurar por...'
                     placeholderTextColor="#a9a9a9"
+                    onSubmitEditing={() => {
+                        navigation.navigate('ResultSearch', search)
+                        setSearch('')
+                    }}
                 />
-                {search > 0 ? 
+                {search.length >= 1 &&
                     <TouchableOpacity
-                        style={{paddingRight: 10}}
+                        style={{height: '100%', width: 50, justifyContent: 'center',
+                        alignItems: 'center', zIndex: 10}}
                         onPress={() => setSearch('')}
                     >
-                        <Icon name="close" size={24} color={Colors.primary} />
+                        <Icon name="close" size={26} color={Colors.primary} />
                     </TouchableOpacity>
-                : <></>}
+                }
             </View>
             <ScrollView>
                 {filteredProducts.length > 0 ? (
@@ -87,16 +94,24 @@ const styles = StyleSheet.create({
         shadowColor: Colors.black,
         shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.6,
-        elevation: 1,
-        zIndex: 1,
-        marginBottom: 5
+        elevation: 10,
+        zIndex: 10,
+        marginBottom: 5,
+        height: 60,
+    },
+    btnHeader: {
+        height: '100%',
+        opacity: 0.8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 10
     },
     input: {
         flex: 1,
         height: 50,
         color: Colors.primary,
         fontSize: 16,
-        width: '68%',
+        height: '100%',
     },
     itemList: {
         height: 50,

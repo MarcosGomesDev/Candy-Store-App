@@ -1,32 +1,10 @@
 import axios from 'axios';
 
-const URL = 'http://192.168.220.254:3003'
+const URL = 'http://192.168.1.4:3003'
 
-
-async function getProducts() {
-    const response = await axios.get(`${URL}/products`)
-
-    return response.data
-}
-
+// ============================= ROTAS DO USUÁRIO =============================
 async function loginUser(email, password) {
   const response = await axios.post(`${URL}/sign-in/user`, {email, password})
-
-  const userInfo = {
-    id: response.data.user._id,
-    name: response.data.user.name,
-    email: response.data.user.email,
-    avatar:
-      response.data.user.avatar ??
-      'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
-    seller: response.data.user.seller,
-    token: response.data.token,
-  };
-
-  await storeData(userInfo);
-  setLoad(false);
-  setProfile(userInfo);
-  setIsLoggedIn(true);
 
   return response.data
 }
@@ -44,7 +22,11 @@ async function userForgotPassword(email) {
 }
 
 async function verifyUserTokenPasswordReset(email, token) {
-  const response = await axios.post(`${URL}/verify-token`, {params: {email: email}}, {token: token})
+  const data = {
+    email: email,
+    token: token
+  }
+  const response = await axios.post(`${URL}/user/valid-token`, data)
 
   return response.data
 }
@@ -68,26 +50,6 @@ async function uploadImageUserProfile(data, token) {
   return response.data
 }
 
-async function addComment(id, token) {
-  const response = await axios.post(`${URL}//product/${id}/rating`, {
-    headers: {
-      authorization: `Bearer ${token}`
-    }
-  })
-
-  return response.data
-}
-
-async function removeComment(id, token) {
-  const response = await axios.delete(`${URL}/product/${id}/rating/delete`, {
-    headers: {
-      authorization: `Bearer ${token}`
-    }
-  })
-
-  return response.data
-}
-
 async function getFavorites(token) {
   const response = await axios.get(`${URL}/user/favorites`, {
     headers: {
@@ -98,37 +60,61 @@ async function getFavorites(token) {
   return response.data
 }
 
-async function addFavorites(id) {
-  const response = await axios.post(
-    `/user/${id}/favorites/new/${item}`,
-  );
+async function addFavorites(id, token) {
+  const headers = {
+    authorization: `Bearer ${token}`
+  }
+
+  const data = {
+    id: id
+  }
+
+  const response = await axios.post(`${URL}/favorites/new`, data, {headers: headers})
 
   return response.data
 }
 
 async function removeFavorites(id, token) {
-  const response = await axios.delete(`${URL}/user/favorites/delete`, {
-    headers: {
-      authorization: `Bearer ${token}`
-    },
-    params: {
-      productId: id,
-    },
-  });
+  const headers = {
+    Authorization: `Bearer ${token}`
+  }
+
+  const response = await axios.delete(`${URL}/favorites/delete`, {headers: headers, params: {id: id}})
 
   return response.data
 }
 
+async function searchProducts(name, latitude, longitude, range, rating) {
+  const response = await axios.get(`${URL}/product/search`, {
+    params: {
+      name: name,
+      latitude: latitude,
+      longitude: longitude,
+      range: range,
+      rating: rating
+    }
+  })
+
+  return response.data
+}
+
+// ============================= ROTAS DO VENDEDOR =============================
 async function loginSeller(email, password) {
   const response = await axios.post(`${URL}/sign-in/seller`, {email, password});
 
   return response.data
 }
 
-async function registerSeller() {
-  const response = await axios.post(`${URL}/sign-up/seller`, {data})
+async function registerSeller(data) {
+  const response = await axios.post(`${URL}/sign-up/seller`, data)
 
-  response.data
+  return response.data
+}
+
+async function getAllProductsSeller(token) {
+  const response = await axios.get(`${URL}/seller/products`, {headers: {authorization: `Bearer ${token}`}})
+
+  return response.data
 }
 
 async function sellerForgotPassword(email) {
@@ -162,29 +148,28 @@ async function uploadImageSellerProfile(data, token) {
   return response.data
 }
 
-async function addReplyComment(id, ratingId) {
-  const response = await axios.post(`${URL}/product/:id/rating/:ratingId`, {
-    params: {
-      id: id,
-      ratingId: ratingId
-    }
+// ============================= ROTAS DE PRODUTOS =============================
+async function getProducts(id, token) {
+  const response = await axios.get(`${URL}/products`, {
+    headers: {
+      authorization: `Bearer ${token}`
+    },
+    params: {id: id}
   })
 
   return response.data
 }
 
-async function deleteReplyComment() {
-  const response = await axios.delete(`${URL}//product/:id/rating/:ratingId`, {
-    params: {
-      id: id,
-      ratingId: ratingId
-    }
+async function getProduct(id) {
+  const response = await axios.get(`${URL}/product`, {
+    params: {id: id}
   })
 
   return response.data
 }
 
 async function addProduct(product, token) {
+  console.log(product)
   const data = new FormData();
     Object.keys(product).forEach(key => {
       if (key === 'images') {
@@ -200,7 +185,7 @@ async function addProduct(product, token) {
       }
     });
 
-    const response = await fetch(`${URL}/product/create`, {
+    const res = await fetch(`${URL}/product/create`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -210,7 +195,9 @@ async function addProduct(product, token) {
       body: data,
     });
 
-    return response.data
+    const response = await res.json()
+
+    return response
 }
 
 async function editProduct(product, token) {
@@ -237,7 +224,7 @@ async function editProduct(product, token) {
       }
   });
 
-  const response = await fetch(`${URL}/product/${product._id}/update`, {
+  const res = await fetch(`${URL}/product/${product._id}/update`, {
       method: 'POST',
       headers: {
           Accept: 'application/json',
@@ -247,11 +234,13 @@ async function editProduct(product, token) {
       body: data,
   });
 
-  return response.data
+  const response = await res.json()
+
+  return response
 }
 
 async function deleteProduct(id, token) {
-  const response = await axios.delete(`/product/${id}/delete`, {
+  const response = await axios.delete(`${URL}/product/${id}/delete`, {
     headers: {
       authorization: `Bearer ${token}`
     }
@@ -260,8 +249,76 @@ async function deleteProduct(id, token) {
   return response.data
 }
 
+// ============================= ROTAS PRA CAT E SUBCAT =============================
+async function getAllCategories() {
+  const response = await axios.get(`${URL}/categories`)
+
+  return response.data
+}
+
+async function getAllSubCategories() {
+  const response = await axios.get(`${URL}/subCategories`)
+
+  return response.data
+}
+
+// ============================= ROTAS PRA COMENTÁRIOS =============================
+async function getAllCommments(id) {
+  const response = await axios.get(`${URL}/product/${id}/comments`)
+
+  return response.data
+}
+
+async function addReplyComment(id, token, replyComment) {
+  const data = {
+    replyComment: replyComment
+  }
+  
+  const response = await axios.post(`${URL}/product/rating`, data, {
+    headers: {authorization: `Bearer ${token}`},
+    params: {
+      id: id,
+    }
+  })
+
+  return response.data
+}
+
+async function addComment(id, token, comment, rating) {
+  const data = {
+    comment: comment,
+    rating_selected: rating
+  }
+
+  const headers = {
+    authorization: `Bearer ${token}`
+  }
+
+  const response = await axios.post(`${URL}/${id}/comment/new`, data , {headers: headers})
+
+  return response.data
+}
+
+async function removeComment(id, token) {
+  const response = await axios.delete(`${URL}/product/${id}/rating/delete`, {
+    headers: {
+      authorization: `Bearer ${token}`
+    }
+  })
+
+  
+  return response.data
+}
+
+async function deleteReplyComment(id, token) {
+  const response = await axios.delete(`${URL}/product/rating/${id}`, {
+    headers: {authorization: `Bearer ${token}`}
+  })
+
+  return response.data
+}
+
 export const api = {
-  getProducts,
   loginUser,
   registerUser,
   uploadImageUserProfile,
@@ -270,7 +327,6 @@ export const api = {
   userResetPassword,
   addComment,
   removeComment,
-  getFavorites,
   addFavorites,
   removeFavorites,
   loginSeller,
@@ -284,4 +340,12 @@ export const api = {
   addProduct,
   editProduct,
   deleteProduct,
+  getProduct,
+  getFavorites,
+  getProducts,
+  getAllCommments,
+  getAllSubCategories,
+  getAllProductsSeller,
+  getAllCategories,
+  searchProducts
 }

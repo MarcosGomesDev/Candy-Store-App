@@ -18,7 +18,7 @@ import Container from '../../../components/core/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colors from '../../../styles/Colors';
 
-import api from '../../../services/api';
+import {api} from '../../../services/api';
 import {isValidEmail} from '../../../utils/validators';
 
 const EmailInfo = ({navigation, route}) => {
@@ -28,7 +28,7 @@ const EmailInfo = ({navigation, route}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confPassword, setConfPassword] = useState('');
-  let item = route.params;
+  const item = route.params;
   const emailInput = createRef();
   const passInput = createRef();
   const confPassInput = createRef();
@@ -70,8 +70,8 @@ const EmailInfo = ({navigation, route}) => {
       return;
     }
 
-    try {
-      const response = await api.post('/sign-up/seller', {
+      setLoad(true)
+      const data = {
         name: item.name,
         lastName: item.lastName,
         credential: item.credential,
@@ -82,21 +82,26 @@ const EmailInfo = ({navigation, route}) => {
         bairro: item.bairro,
         localidade: item.localidade,
         UF: item.UF,
-        email,
-        password,
-      });
-      setLoad(false);
-      dispatch(showToast(response.data, 'success', 'person'));
-      setTimeout(() => {
-        navigation.navigate('SellerLogin');
-      }, 2000);
-    } catch (err) {
-      console.log(err);
-      Alert.alert(
-        'Erro',
-        'Erro ao criar vendedor, tente novamente mais tarde!',
-      );
-    }
+        email: email,
+        password: password,
+      }
+
+
+      await api.registerSeller(data)
+      .then((data) => {
+        console.log(data)
+        setLoad(false);
+        dispatch(showToast(data, 'success', 'done'));
+        setTimeout(() => {
+          navigation.navigate('SellerLogin');
+        }, 2000);
+      })
+      .catch((err) => {
+        console.log(err.response.data);
+        Alert.alert(
+          'Erro',
+          'Erro ao criar vendedor, tente novamente mais tarde!',
+      )})
   };
 
   const back = () => {
@@ -167,7 +172,7 @@ const EmailInfo = ({navigation, route}) => {
               {load ? (
                 <ActivityIndicator size="small" color={Colors.white} />
               ) : (
-                'Enviar'
+                'Cadastrar'
               )}
             </Text>
           </TouchableOpacity>

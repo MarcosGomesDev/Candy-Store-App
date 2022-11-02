@@ -4,15 +4,18 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colors from '../../../../styles/Colors';
 import { useNavigation } from '@react-navigation/native'
 import {useDispatch} from 'react-redux'
+import {useLogin} from '../../../../context/LoginProvider'
 import { showToast } from '../../../../store/modules/toast/actions';
 import ModalOptions from '../ModalOptions';
-import api from '../../../../services/api'
+import {api} from '../../../../services/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 const Item = ({item}) => {
+    const dispatch = useDispatch()
     const navigation = useNavigation()
+    const queryClient = useQueryClient()
+    const {profile, setIsLoggedIn} = useLogin()
     const [modalVisible, setModalVisible] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState(null)
-    const dispatch = useDispatch()
-    const price = item.price.toString()
 
     const handleOptionsProduct = (product) => {
         setModalVisible(true)
@@ -24,7 +27,8 @@ const Item = ({item}) => {
         navigation.navigate('EditProduct', item)
     }
 
-    async function deleteProduct(productId) {
+    async function deleteProduct(id) {
+        console.log(id)
         Alert.alert('Excluir', 'Você deseja realmente exluir este produto?', [
             {
                 text: 'Não',
@@ -33,20 +37,28 @@ const Item = ({item}) => {
             },
             {
                 text: 'Sim',
-                onPress: () => confirmDelete(productId)
+                onPress: () => mutate(id)
             }
         ])
     }
 
-    async function confirmDelete(id) {
-        try {
-            const response = await api.delete(`/product/${id}/delete`)
+    const {mutate} = useMutation((id) => api.deleteProduct(id, profile.token), {
+        onSuccess: (data) => {
             setModalVisible(false)
-            dispatch(showToast(response.data, 'success', 'done'))
-        } catch (error) {
-            dispatch(showToast(error.response.data, 'error', 'error'))
+            queryClient.invalidateQueries(['products-list'])
+            dispatch(showToast(data, 'success', 'done'))
+        },
+        onError: (error) => {
+            const status = error.request.status
+            const messageError = error.response.data
+            
+            if(status === 413) {
+                dispatch(showToast(messageError, 'error', 'error'))
+                removeData();
+                setIsLoggedIn(false);
+            }
         }
-    }
+    })
 
     const onCloseModal = () => {
         setModalVisible(false)
@@ -55,7 +67,6 @@ const Item = ({item}) => {
     return (
         <>
             <TouchableOpacity
-                key={item._id} 
                 style={styles.ProductContainer}
                 onPress={() => navigation.navigate('ProductItem', item._id)}
             >
@@ -75,7 +86,7 @@ const Item = ({item}) => {
                     </Text>
                     <View style={styles.footer}>
                         <Text style={styles.productPrice}>
-                            R$ {price.replace('.', ',')}
+                            R$ {item.price}
                         </Text>
                         <TouchableOpacity 
                             onPress={() => handleOptionsProduct(item)}

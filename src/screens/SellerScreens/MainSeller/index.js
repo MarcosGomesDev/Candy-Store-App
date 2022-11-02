@@ -17,82 +17,59 @@ import {showToast} from '../../../store/modules/toast/actions';
 import {useDispatch} from 'react-redux';
 import {useLogin} from '../../../context/LoginProvider';
 
-import api from '../../../services/api';
+import {api} from '../../../services/api';
 
 import Container from '../../../components/core/Container';
 import Item from './Item';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colors from '../../../styles/Colors';
+import { useQuery } from '@tanstack/react-query';
 
-const Products = props => {
+const Products = (props) => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const {profile, setIsLoggedIn} = useLogin();
-  const [refresh, setRefresh] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState([]);
 
-  async function loadProducts() {
-    try {
-      setLoading(true);
-      const response = await api.get('/seller/products', {
-        headers: {
-          authorization: `Bearer ${profile.token}`,
-        },
-      });
-
-      if (response.status === 200) {
-        setProducts(response.data);
-        setLoading(false);
-      }
-    } catch (error) {
-      const statusCode = error.response.status;
-      const data = error.response.data;
-
-      if (statusCode === 413) {
-        setLoading(false);
-        dispatch(showToast(data, 'error', 'error'));
+  const {data, isLoading} = useQuery(['products-list'], () => api.getAllProductsSeller(profile.token), {
+    onError: (error) => {
+      const status = error.request.status
+      const messageError = error.response.data
+      console.log(messageError)
+      if(status === 413) {
+        dispatch(showToast(messageError, 'error', 'error'))
         removeData();
         setIsLoggedIn(false);
       }
-      dispatch(showToast(error.response.data, 'error', 'error'));
-      setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    const active = navigation.addListener('focus', () => {
-      loadProducts();
-    });
-
-    return active;
-  }, [products]);
-
-  async function pullMe() {
-    setRefresh(true);
-    await loadProducts();
-    setRefresh(false);
-  }
+  })
 
   return (
     <Container>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() =>
-            props.navigation.dispatch(DrawerActions.toggleDrawer())
-          }>
+          style={styles.btnHeader}
+          onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}
+        >
           <Icon name="menu" size={26} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Meus Produtos</Text>
-      </View>
-      <View style={styles.addContainer}>
+        <Text style={styles.title}>
+            Meus produtos
+        </Text>
         <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => navigation.navigate('NewProduct')}>
-          <Icon name="add" size={24} color={Colors.white} />
+          style={[styles.btnHeader, {transform: [{scale: 0}]}]}
+          onPress={() => {}}
+        >
+          <Icon name="notifications" size={26} color={Colors.primary} />
         </TouchableOpacity>
+    </View>
+    <View style={styles.addContainer}>
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={() => navigation.navigate('NewProduct')}>
+        <Icon name="add" size={24} color={Colors.white} />
+      </TouchableOpacity>
       </View>
-      {loading ? (
+      {isLoading && (
         <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
           <ActivityIndicator
             style={styles.load}
@@ -100,41 +77,46 @@ const Products = props => {
             color={Colors.primary}
           />
         </View>
-      ) : (
-        <ScrollView
-          refreshControl={
-            <RefreshControl refreshing={refresh} onRefresh={() => pullMe()} />
-          }>
-          <View style={styles.marginContainer}>
-            {products.map((item, index) => (
-              <Item key={index} item={item} />
-            ))}
-          </View>
-        </ScrollView>
       )}
+      <ScrollView>
+          { data ? (
+            <View style={styles.marginContainer}>
+              {data.map((item, index) => (
+                <Item key={index} item={item} />
+              ))}
+            </View>
+          )
+        : null}
+      </ScrollView>
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    padding: 15,
-    paddingVertical: 20,
+    height: 60,
     flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: Colors.white,
+    alignItems: 'center',
     shadowColor: Colors.black,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.6,
-    elevation: 1,
-    zIndex: 1,
+    elevation: 10,
+    zIndex: 10,
+    width: '100%',
   },
   title: {
-    width: '80%',
-    color: Colors.primary,
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 20,
+      color: Colors.primary
+  },
+  btnHeader: {
+      width: '12.5%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10
   },
   addContainer: {
     margin: 10,

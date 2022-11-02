@@ -7,6 +7,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
   Image,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
@@ -16,59 +17,37 @@ import {useNavigation} from '@react-navigation/native';
 import {showToast} from '../../../store/modules/toast/actions';
 
 import {useLogin} from '../../../context/LoginProvider';
-import {removeData} from '../../../utils/storage';
-import api from '../../../services/api';
+import useFavoritesList from '../../../hooks/useFavoritesList';
+import {api} from '../../../services/api';
 import Container from '../../../components/core/Container';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colors from '../../../styles/Colors';
-import {TouchableOpacity} from 'react-native-gesture-handler';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Favorites = props => {
   const dispatch = useDispatch();
   const {setIsLoggedIn, profile} = useLogin();
   const navigation = useNavigation();
-  const [favorites, setFavorites] = useState([]);
+  const favorites = useFavoritesList()
+  const queryClient = useQueryClient()
 
-  const remove = async item => {
-    try {
-      const res = await api.delete('/user/favorites/delete', {
-        headers: {
-          authorization: `Bearer ${profile.token}`
-        },
-        params: {
-          productId: item._id,
-        },
-      });
-      dispatch(showToast(res.data, 'success', 'favorite'));
-    } catch (error) {
-      dispatch(showToast(error.response.data, 'error', 'favorite'));
-    }
-  };
+  
 
-  async function loadFavorites() {
-    try {
-      const response = await api.get('/user/favorites', {
-        headers: {
-          authorization: `Bearer ${profile.token}`,
-        },
-      });
-
-      setFavorites(response.data);
-    } catch (error) {
-      const statusCode = error.response.status;
-      const data = error.response.data;
-
-      if (statusCode === 413) {
-        dispatch(showToast(data, 'error', 'error'));
+  const {mutate: removeToFavorites} = useMutation((id) => api.removeFavorites(id, profile.token), {
+    onSuccess: (data) => {
+      dispatch(showToast(data, 'success', 'done'))
+      queryClient.invalidateQueries(['favorites-list'])
+    },
+    onError: (error) => {
+      const status = error.request.status
+      const messageError = error.response.data
+      if(status === 413) {
+        dispatch(showToast(messageError, 'error', 'error'))
         removeData();
         setIsLoggedIn(false);
       }
     }
-  }
-
-  useEffect(() => {
-    loadFavorites();
-  }, [favorites]);
+  })
 
   return (
     <Container>
@@ -87,7 +66,7 @@ const Favorites = props => {
         </TouchableOpacity>
         <Text style={styles.title}>Favoritos</Text>
       </View>
-      {favorites.length < 0 ? (
+      {!favorites ? (
         <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
           <ActivityIndicator
             style={styles.load}
@@ -125,7 +104,7 @@ const Favorites = props => {
                       R$ {item.price.toString().replace('.', ',')}
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => remove(item)}>
+                  <TouchableOpacity onPress={() => removeToFavorites(item._id)}>
                     <Icon name="close" size={26} color={Colors.primary} />
                   </TouchableOpacity>
                 </View>

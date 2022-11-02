@@ -6,15 +6,17 @@ import Colors from '../../styles/Colors';
 import Modal from 'react-native-modal'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
-import useCategories from '../../hooks/useCategories'
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../services/api';
 
 const CategoryModal = ({isVisible, onConfirm, onCancel}) => {
-    const [categories] = useCategories()
     const [search, setSearch] = useState('')
 
+    const {data, isLoading} = useQuery(['categories-list'], api.getAllCategories)
+
     const filteredCategories = search.length > 0
-        ? categories.filter(item => item.name.includes(search))
-        : categories.sort(function (a, b) {
+        ? data.filter(item => item.name.includes(search))
+        : data?.sort(function (a, b) {
             if(a.name < b.name) return -1
         })
     

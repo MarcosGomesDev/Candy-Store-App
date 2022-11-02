@@ -1,4 +1,3 @@
-/* eslint-disable react-native/no-inline-styles */
 import React, {useState, createRef, useEffect, useRef} from 'react';
 import {
   View,
@@ -16,8 +15,7 @@ import {useDispatch} from 'react-redux';
 import Container from '../../../components/core/Container';
 import Colors from '../../../styles/Colors';
 import Input from '../../../components/Input';
-import api from '../../../services/api';
-
+import {api} from '../../../services/api';
 import {useLogin} from '../../../context/LoginProvider';
 import {isValidEmail} from '../../../utils/validators';
 import {heightPercent} from '../../../utils/dimensions';
@@ -39,10 +37,10 @@ const Login = () => {
     animatedScale.setValue(1);
     emailInput.current.resetError();
     passInput.current.resetError();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, password]);
 
   const signIn = async () => {
+
     animatedScale.setValue(0.8);
     Animated.spring(animatedScale, {
       toValue: 1,
@@ -74,32 +72,21 @@ const Login = () => {
     //     passInput.current.focusOnError()
     //     return
     // }
-
-    try {
-      setLoad(true);
-      const response = await api.post('/sign-in/user', {email, password});
-      const userInfo = {
-        id: response.data.user._id,
-        name: response.data.user.name,
-        email: response.data.user.email,
-        avatar:
-          response.data.user.avatar ??
-          'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png',
-        seller: response.data.user.seller,
-        token: response.data.token,
-      };
-
-      await storeData(userInfo);
-      setLoad(false);
-      setEmail('');
-      setPassword('');
-      setProfile(userInfo);
-      setIsLoggedIn(true);
-    } catch (error) {
-      setLoad(false);
-      console.log(error.response)
-      dispatch(showToast(error.response.data, 'error', 'error'));
-    }
+    setLoad(true)
+    await api.loginUser(email, password)
+    .then((data) => {
+      console.log(data,'vem pro then')
+      storeData(data)
+      setLoad(false)
+      setEmail('')
+      setPassword('')
+      setProfile(data)
+      setIsLoggedIn(true)
+    })
+    .catch((e) => {
+      setLoad(false)
+      dispatch(showToast(e.response.data, 'error', 'error'))
+    })
   };
 
   return (

@@ -15,8 +15,12 @@ import CategoryPicker from './CategoryPicker';
 import SubCategoryPicker from './SubCategoryPicker';
 import ImagesPicker from './ImagesPicker';
 import Colors from '../../styles/Colors';
+import { useDispatch } from 'react-redux';
+import { showToast } from '../../store/modules/toast/actions';
 
 const NewProduct = ({productData, handleSubmit, titleBtn}) => {
+  const dispatch = useDispatch()
+
   let data = {
     _id: productData?._id ?? '',
     name: productData?.name ?? '',
@@ -29,13 +33,23 @@ const NewProduct = ({productData, handleSubmit, titleBtn}) => {
 
   const [product, setProduct] = useState(data || {});
   const [name, setName] = useState(product?.name || '');
-  const [price, setPrice] = useState(product?.price || '0');
+  const [price, setPrice] = useState(product?.price || '0,00');
   const [description, setDescription] = useState(product?.description || '');
   const [category, setCategory] = useState(product?.category || '');
   const [subcategory, setSubCategory] = useState(product?.subcategory || '');
   const [images, setImages] = useState(product?.images || []);
 
   function submit() {
+    if (
+      name === '' ||
+      price === '' ||
+      category === '' ||
+      subcategory === '' ||
+      images === ''
+    ) {
+      dispatch(showToast('Preencha todos os campos!', 'error', 'error'));
+      return;
+    }
     handleSubmit(product);
   }
 
@@ -58,8 +72,7 @@ const NewProduct = ({productData, handleSubmit, titleBtn}) => {
               value={price}
               onChangeTextValue={text => {
                 setPrice(text);
-                const number = text.replace(',', '.');
-                setProduct({...product, price: parseFloat(number)});
+                setProduct({...product, price: text});
               }}
             />
 

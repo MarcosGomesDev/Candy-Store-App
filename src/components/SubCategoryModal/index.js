@@ -6,15 +6,20 @@ import Colors from '../../styles/Colors';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Modal from 'react-native-modal'
 
-import useSubCategories from '../../hooks/useSubCategories'
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../services/api';
 
 const SubCategoryModal = ({isVisible, onConfirm, onCancel}) => {
-    const [subCategories] = useSubCategories()
     const [search, setSearch] = useState('')
 
+    const {data, isLoading} = useQuery(['subcategories-list'], api.getAllSubCategories, {
+        onSuccess: () => console.log('carregou'),
+        onError: (e) => console.log(e.request.status) 
+    })
+
     const filteredSubCategories = search.length > 0
-        ? subCategories.filter(item => item.name.includes(search))
-        : subCategories.sort(function (a, b) {
+        ? data.filter(item => item.name.includes(search))
+        : data?.sort(function (a, b) {
             if(a.name < b.name) return -1
         })
 

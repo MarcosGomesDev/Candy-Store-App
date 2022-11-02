@@ -20,6 +20,7 @@ import {widthPercent, heightPercent} from '../../utils/dimensions';
 const Input = forwardRef((props, ref) => {
   const [secureEntry, setSecureEntry] = useState(props.secureTextEntry);
   const [error, setError] = useState(false);
+  const [active, setActive] = useState(props.changeIcon)
   const inputRef = createRef();
 
   useImperativeHandle(ref, () => ({

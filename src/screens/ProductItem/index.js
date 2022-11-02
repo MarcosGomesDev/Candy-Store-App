@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   ScrollView,
@@ -15,101 +15,81 @@ import {useNavigation} from '@react-navigation/native';
 import {showToast} from '../../store/modules/toast/actions';
 import {useDispatch} from 'react-redux';
 import {useLogin} from '../../context/LoginProvider';
-import {removeData} from '../../utils/storage';
 import {api} from '../../services/api';
 import Container from '../../components/core/Container';
+import CarrousselImages from './CarrousselImages';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons'
 import Colors from '../../styles/Colors';
-import { useQuery } from '@tanstack/react-query';
+import RatingProduct from './RatingProduct';
+import useFavoritesList from '../../hooks/useFavoritesList';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { removeData } from '../../utils/storage';
 
-const {width} = Dimensions.get('window');
 const ProductItem = ({route}) => {
-  const item = route.params;
+  const id = route.params;
   const {profile, setIsLoggedIn} = useLogin();
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [verify, setVerify] = useState(false);
-  const [favorites, setFavorites] = useState([]);
-  const [product, setProduct] = useState([])
-  console.log()
-  const {data, isLoading, isError} = useQuery(['favorites-list'], api.getFavorites(profile.token))
+  const favorites = useFavoritesList()
+  const queryClient = useQueryClient()
 
-  const vefiryExistFavorite = async () => {
-    try {
-      const response = await api.get('/user/favorites', {
-        headers: {authorization: `Bearer ${profile.token}`},
-      });
-      setFavorites(response.data);
-      const valid = response.data.map(({_id}) => _id).includes(item);
-      setVerify(valid);
-    } catch (error) {
-      console.log(error.response.data);
-      const status = error.response.status;
-      const data = error.response.data;
-      if (status === 413) {
-        dispatch(showToast(data, 'error', 'error'));
-        removeData();
-        setIsLoggedIn(false);
-      }
-    }
-  };
+  const valid = profile.seller === false && favorites?.map(({_id}) => _id).includes(id)
 
-
-  useEffect(() => {
-    if (profile.seller === false) {
-      vefiryExistFavorite();
-    }
-
-    const active = navigation.addListener('focus', () => {
-      api.get(`/product/${item}`)
-      .then((response) => {
-        setProduct(response.data)
-      })
-      .catch((error) => {
-        console.log('ocorreu um erro')
-      })
-    })
-
-    return active
-  }, [verify]);
-
-  const addToFavorites = async item => {
-    const validExist = favorites.map(({_id}) => _id).includes(item);
-    try {
-      if (validExist) {
-        await api
-          .delete('/user/favorites/delete', {
-            headers: {authorization: `Bearer ${profile.token}`},
-            params: {productId: item},
-          })
-          .then(res => {
-            dispatch(showToast(res.data, 'success', 'done'));
-            vefiryExistFavorite();
-          })
-          .catch(error =>
-            dispatch(showToast(error.response.data, 'error', 'error')),
-          );
-      } else {
-        try {
-          const response = await api.post(
-            `/user/${profile.id}/favorites/new/${item}`,
-          );
-
-          dispatch(showToast(response.data, 'success', 'done'));
-          vefiryExistFavorite();
-        } catch (error) {
-          console.log(error.response.data);
+  // RETORNA OS DADOS DO PRODUTO
+    const {data: product, isLoading, isError} = useQuery(['product'], () => api.getProduct(id), {
+      onSuccess: () => console.log('deu certo'),
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
         }
       }
-    } catch (error) {
-      dispatch(showToast(error.response.data, 'error', 'error'));
-    }
-  };
+    })
 
-  const OnBoardingItem = ({item}) => {
-    return <Image source={{uri: item}} style={styles.image} />;
-  };
+  // ADICIONA O PRODUTO A LISTA DE FAVORITOS
+  const {mutate: addToFavorites} = useMutation(() => api.addFavorites(id, profile.token),
+    {
+      onSuccess: (data) => {
+        dispatch(showToast(data, 'success', 'done'))
+        queryClient.invalidateQueries(["favorites-list"])
+      },
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
+        }
+      }
+    }
+  )
+
+  // REMOVE O PRODUTO A LISTA DE FAVORITOS
+  const {mutate: removeToFavorites} = useMutation(() => api.removeFavorites(id, profile.token),
+    {
+      onSuccess: (data) => {
+        console.log(data)
+        dispatch(showToast(data, 'success', 'done'))
+        queryClient.invalidateQueries(["favorites-list"])
+      },
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
+        }
+      }
+    }
+  )
 
   return (
     <Container color={'#fff'}>
@@ -121,73 +101,35 @@ const ProductItem = ({route}) => {
           <Icon name="arrow-back" size={30} color={Colors.primary} />
         </TouchableOpacity>
         <Text style={styles.title}>Produto</Text>
-        {profile.seller === false && (
+        {profile.seller === false ? (
           <TouchableOpacity
-            onPress={() => addToFavorites(item)}
+            onPress={() => {valid ? removeToFavorites() : addToFavorites()}}
             style={styles.btnHeader}>
             <Icon
-              name={verify === true ? 'favorite' : 'favorite-outline'}
+              name={valid ? 'favorite' : 'favorite-outline'}
               size={34}
               color={Colors.primary}
             />
           </TouchableOpacity>
-        )}
+        ) : <View style={styles.btnHeader}></View>}
       </View>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {isLoading && (
+      {isLoading && (
           <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             <ActivityIndicator size="large" color={Colors.primary} />
           </View>
         )}
+      {product && (
+        <ScrollView showsVerticalScrollIndicator={false}>
+        
           <>
             <Text style={styles.productName}>{product.name}</Text>
             <View style={styles.ratings}>
-              <Icon
-                style={styles.star}
-                name="star"
-                size={24}
-                color={Colors.gold}
-              />
-              <Text style={{fontSize: 14, paddingLeft: 8, color: Colors.black}}>
-                {product.ratingAverage}
-              </Text>
+              <RatingProduct rating={product.ratingAverage} />
               <Text style={{fontSize: 14, paddingLeft: 8, color: Colors.grey}}>
-                ({product.rating?.length})
+                ({product.rating?.length}) avaliações
               </Text>
             </View>
-            <FlatList
-              data={product.images}
-              style={{width: width, height: 355}}
-              pagingEnabled
-              horizontal
-              onMomentumScrollEnd={event =>
-                setActiveIndex(
-                  parseInt(event.nativeEvent.contentOffset.x / width + 0.3),
-                )
-              }
-              scrollEventThrottle={16}
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item, index) => String(item + index)}
-              renderItem={({item}) => <OnBoardingItem item={item} />}
-            />
-            {product.images?.length > 1 ? (
-                <View style={styles.dotsContainer}>
-                  {product.images.map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.dot,
-                        {
-                          backgroundColor:
-                            i === activeIndex ? Colors.primary : '#d4d4d4',
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              ) : (
-              <></>
-            )}
+            <CarrousselImages data={product.images} />
             <Text
               style={[
                 styles.price,
@@ -203,19 +145,18 @@ const ProductItem = ({route}) => {
             </View>
             {profile.seller === false && (
               <View style={styles.vendorContainer}>
-                <Text style={{fontSize: 16, color: Colors.black}}>
-                  Vendido por{' '}
+                <Text style={{fontSize: 16, color: Colors.gray, fontWeight: '500'}}>
+                  Vendido por
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('Seller', item)}>
+                  onPress={() => navigation.navigate('SellerStore', product.seller._id)}>
                   <Text
                     style={{
                       color: Colors.primary,
                       fontSize: 16,
+                      fontWeight: 'bold',
                       textTransform: 'uppercase',
-                    }}>
-                    {product.seller?.name}
-                  </Text>
+                    }}> {product.seller.name}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -235,7 +176,7 @@ const ProductItem = ({route}) => {
               {product.rating?.length > 0 && (
                 <TouchableOpacity
                   style={{marginBottom: 10}}
-                  onPress={() => {navigation.navigate('CommentScreen', {id: product._id, item: product.rating})}}
+                  onPress={() => {navigation.navigate('CommentScreen', product._id)}}
                 >
                   <Text style={{color: Colors.primary}}>Ver todos os comentários</Text>
                 </TouchableOpacity>
@@ -249,18 +190,44 @@ const ProductItem = ({route}) => {
                 }}>
                 <TouchableOpacity
                   style={styles.sendCommentBtn}
-                  onPress={() => navigation.navigate('CommentScreen', {id: product._id, item: product.rating})}
+                  onPress={() => navigation.navigate('CommentScreen', product._id)}
                 >
                   <Text
                     style={styles.sendCommentBtnText}
                   >
-                    Adicionar comentário
+                    Avaliar produto
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sendCommentBtn, {marginTop: 30, backgroundColor: Colors.green, flexDirection: 'row'}]}
+                  // onPress={() => navigation.navigate('CommentScreen', product._id)}
+                >
+                  <Icon2 name="whatsapp"size={24} color={Colors.white} style={{paddingRight: 10}} />
+                  <Text
+                    style={styles.sendCommentBtnText}
+                  >
+                    Fale com o vendedor
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </>
-      </ScrollView>
+        </ScrollView>
+      )}
+      {isError && (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text>Erro ao mostrar este produto!</Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: Colors.primary,
+              width: '90%',
+              height: 55
+            }}
+          >
+            <Text>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </Container>
   );
 };
@@ -282,34 +249,19 @@ const styles = StyleSheet.create({
     width: '12.5%',
     height: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   title: {
     fontSize: 20,
+    textAlign: 'center',
     color: Colors.primary,
     marginTop: 3,
-    paddingLeft: 10,
-    width: '75%',
-  },
-  image: {
-    width,
-    height: width,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginHorizontal: 2,
+    flex: 1
   },
   price: {
-    color: Colors.black,
+    color: Colors.primary,
     fontSize: 28,
-    fontWeight: '400',
+    fontWeight: 'bold',
     paddingLeft: 20,
   },
   productName: {
@@ -326,9 +278,6 @@ const styles = StyleSheet.create({
     marginTop: -5,
     marginBottom: 10,
   },
-  star: {
-    marginTop: -4,
-  },
   detailsContainer: {
     paddingLeft: 20,
     paddingRight: 15,
@@ -338,7 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
-    color: Colors.black,
+    color: Colors.primary,
   },
   description: {
     color: Colors.grey,

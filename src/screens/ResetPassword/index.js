@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
     mainContent: {
         paddingVertical: 20,
         alignItems: 'center',
+        marginTop: 50,
     },
     btn: {
         width: '80%',

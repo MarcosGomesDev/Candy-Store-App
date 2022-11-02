@@ -17,15 +17,18 @@ const SellerRegister = ({navigation}) => {
 
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [storeName, setStoreName] = useState('')
   const [credential, setCredential] = useState('');
 
   const nameInput = createRef();
   const lastNameInput = createRef();
+  const storeNameInput = createRef()
   const credentialInput = createRef();
 
   useEffect(() => {
     nameInput.current.resetError();
     lastNameInput.current.resetError();
+    storeNameInput.current.resetError()
     credentialInput.current.resetError();
   }, [name, lastName, credential]);
 
@@ -33,7 +36,7 @@ const SellerRegister = ({navigation}) => {
     navigation.goBack();
   };
 
-  const next = async (name, lastName, credential) => {
+  const next = async (name, lastName, storeName, credential) => {
     if (name === '') {
       dispatch(showToast('Por favor insira o nome', 'error', 'error'));
       nameInput.current.focusOnError();
@@ -66,11 +69,29 @@ const SellerRegister = ({navigation}) => {
           'error',
         ),
       );
+      storeNameInput.current.focusOnError();
+      return;
+    }
+
+    if (storeName === '') {
+      dispatch(showToast('Por favor insira o nome da loja', 'error', 'error'));
       lastNameInput.current.focusOnError();
       return;
     }
 
-    const item = {name, lastName, credential};
+    if (storeName.length < 3) {
+      dispatch(
+        showToast(
+          'Nome da loja muito curto, mínimo de 3 caracteres!',
+          'error',
+          'error',
+        ),
+      );
+      storeNameInput.current.focusOnError();
+      return;
+    }
+
+    const item = {name, lastName, storeName, credential};
 
     navigation.navigate('addressInfo', item);
   };
@@ -118,6 +139,15 @@ const SellerRegister = ({navigation}) => {
             value={lastName}
             onChangeText={setLastName}
             iconName={'person'}
+          />
+          <Input
+            title="Nome da loja"
+            ref={storeNameInput}
+            placeholder="Nome da loja"
+            autoCorrect={false}
+            value={storeName}
+            onChangeText={setStoreName}
+            iconName={'store'}
           />
           <Input
             title="CPF"

@@ -1,35 +1,54 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import { useQuery } from '@tanstack/react-query';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import {getData} from '../utils/storage';
 const LoginContext = createContext();
 
 const LoginProvider = ({children}) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState({});
+  
+  // const getUser = () => {
+  //   return new Promise((resolve, reject) => {
+  //     getData().then(userInfo => {
+  //       if (!userInfo) {
+  //         setIsLoggedIn(false);
+  //         setProfile({});
+  //         return;
+  //       }
+  //       if (!userInfo.token) {
+  //         setIsLoggedIn(false);
+  //         setProfile({});
+  //         return;
+  //       } else {
+  //         setIsLoggedIn(true);
+  //         setProfile(userInfo);
+  //         resolve();
+  //       }
+  //     });
+  //   });
+  // };
 
-  const getUser = () => {
-    return new Promise((resolve, reject) => {
-      getData().then(data => {
-        if (!data) {
-          setIsLoggedIn(false);
-          setProfile({});
-          return;
-        }
-        if (!data.token) {
-          setIsLoggedIn(false);
-          setProfile({});
-          return;
-        } else {
-          setIsLoggedIn(true);
-          setProfile(data);
-          resolve();
-        }
-      });
-    });
-  };
+  const {} = useQuery(['profile-user'], getData, {
+    onSuccess: (data) => {
+      if (!data) {
+        setIsLoggedIn(false);
+        setProfile({});
+        return;
+      }
+      if (!data.token) {
+        setIsLoggedIn(false);
+        setProfile({});
+        return;
+      } else {
+        setIsLoggedIn(true);
+        setProfile(data);
+      }
+    }
+  })
 
-  useEffect(() => {
-    getUser();
-  }, []);
+  // useEffect(() => {
+  //   getUser();
+  // }, []);
 
   return (
     <LoginContext.Provider

@@ -23,19 +23,21 @@ import Colors from '../../styles/Colors';
 import {useLogin} from '../../context/LoginProvider';
 import {storeData, removeData} from '../../utils/storage';
 import {URL} from '@env';
-import { ColorSpace } from 'react-native-reanimated';
 
 const Profile = props => {
-  const {setIsLoggedIn, setProfile, profile} = useLogin();
   const dispatch = useDispatch();
+  const avatarDefault = 'https://res.cloudinary.com/gomesdev/image/upload/v1649718658/avatar_ip9qyt.png'
+  const {setIsLoggedIn, setProfile, profile} = useLogin();
   const [modalVisible, setModalVisible] = useState(false);
   const [avatar, setAvatar] = useState({});
   const [loading, setLoading] = useState(false);
-  const [editable, setEditable] = useState(false)
   const [name, setName] = useState(profile.name)
   const [lastname, setLastname] = useState(profile.lastname)
   const [email, setEmail] = useState(profile.email)
-
+  const [phone, setPhone] = useState(profile.socialmedias)
+  const [facebook, setFacebook] = useState(profile.socialmedias)
+  const [instagram, setInstagram] = useState(profile.socialmedias)
+  
   const options = {
     selectionLimit: 1,
     mediaType: 'photo',
@@ -109,28 +111,34 @@ const Profile = props => {
     }
   };
 
-  const changeEditable = () => {
-    setEditable(!editable)
-  }
 
   return (
     <Container color="#fff">
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={{padding: 20}}
-          onPress={() =>
-            props.navigation.dispatch(DrawerActions.toggleDrawer())
-          }>
-          <Icon name="menu" size={26} color={Colors.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Minha conta</Text>
-      </View>
-      <ScrollView>
+      <View style={{backgroundColor: Colors.primary}}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={{padding: 20}}
+            onPress={() =>
+              props.navigation.goBack()
+            }>
+            <Icon name="arrow-back" size={26} color={Colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Editar Perfil</Text>
+          <TouchableOpacity
+            style={{padding: 20}}
+            onPress={() =>
+              props.navigation.goBack()
+            }>
+            <Text style={{color: Colors.white, fontWeight: 'bold', fontSize: 16}}>Salvar</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.profileContainer}>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Image style={styles.profileImage} source={{uri: profile.avatar}} />
+          <Image style={styles.profileImage} source={{uri: profile.avatar ?? avatarDefault}} />
+          <TouchableOpacity
+            style={styles.editIcon}
+            onPress={() => setModalVisible(true)}
+          >
             <Icon
-              style={styles.editIcon}
               name="add-a-photo"
               size={24}
               color={Colors.primary}
@@ -138,63 +146,47 @@ const Profile = props => {
           </TouchableOpacity>
           <Text style={styles.username}>{profile.name}</Text>
         </View>
-
+      </View>
+        <ScrollView>
         <View style={{
           paddingHorizontal: 20,
-          marginTop: 20,
-          alignItems: 'center'
+          paddingBottom: 30,
+          marginTop: -10,
+          alignItems: 'center',
         }}>
-          <TouchableOpacity 
-            style={{
-              alignSelf: 'flex-end',
-            }}
-            onPress={() => changeEditable()}
-          >
-            <Icon name={editable ? "close" : "edit"} size={24} color={Colors.primary} />
-          </TouchableOpacity>
           <Input
-            enabled={editable ? Colors.primary : '#a9a9a9'}
             iconName="person"
             title="Nome"
-            editable={editable}
-            defaultValue={name}
+            value={name}
+            onChangeText={(text) => setName(text)}
           />
           <Input
-            enabled={editable ? Colors.primary : '#a9a9a9'}
             iconName="person"
             title="Sobrenome"
-            editable={editable}
             defaultValue={lastname}
           />
           <Input
-            enabled={editable ? Colors.primary : '#a9a9a9'}
             iconName="email"
             title="E-mail"
-            editable={editable}
             defaultValue={email}
           />
-
-          {editable && (
-            <View style={{width: '100%', alignItems: 'center', marginTop: 20}}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: Colors.primary,
-                  width: '90%',
-                  height: 50,
-                  borderRadius: 15,
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <Text
-                  style={{color: Colors.white, fontSize: 16, fontWeight: 'bold'}}
-                >
-                  Salvar
-                </Text>
-              </TouchableOpacity>
-            </View>
+          {profile.seller === true && (
+          <>
+          <Input
+            iconName="phone"
+            title="Celular"
+            defaultValue={phone}
+          />
+          <Input
+            title="Facebook"
+            defaultValue={facebook}
+          />
+          <Input
+            title="Instagram"
+            defaultValue={instagram}
+          />
+          </>
           )}
-          
         </View>
       </ScrollView>
 
@@ -216,7 +208,7 @@ const Profile = props => {
                 styles.profileImage,
                 {alignSelf: 'center', marginVertical: 20},
               ]}
-              source={{uri: avatar.uri ? avatar.uri : profile.avatar}}
+              source={{uri: profile?.avatar ?? avatarDefault}}
             />
             <TouchableOpacity
               onPress={() => handleImageUser()}
@@ -254,36 +246,38 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.6,
-    elevation: 10,
-    zIndex: 1,
+    width: '100%',
   },
   title: {
-    width: '65%',
+    flex: 1,
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: Colors.primary,
+    color: Colors.white,
+    marginLeft: 20,
   },
   profileContainer: {
     alignItems: 'center',
     marginTop: 15,
+    padding: 5
   },
   profileImage: {
-    width: 75,
-    height: 75,
+    width: 120,
+    height: 120,
     borderRadius: 150,
     borderWidth: 1,
     borderColor: Colors.primary,
     marginBottom: 10,
   },
   editIcon: {
-    position: 'absolute',
-    right: -4,
-    bottom: 15,
+    bottom: 50,
+    marginLeft: 90,
+    backgroundColor: Colors.secondary,
+    height: 40,
+    width: 40,
+    borderRadius: 150,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   username: {
     fontSize: 15,

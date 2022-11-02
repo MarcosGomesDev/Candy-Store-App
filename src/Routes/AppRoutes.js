@@ -18,7 +18,7 @@ export function AppStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}>
+    }}>
       <Stack.Screen name="Login" component={UserLogin} />
       <Stack.Screen name="UserRegister" component={UserRegister} />
       <Stack.Screen name="addressInfo" component={AddressInfo} />
