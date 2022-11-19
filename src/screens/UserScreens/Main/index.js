@@ -10,7 +10,6 @@ import Geolocation from '@react-native-community/geolocation'
 import ProductList from '../../../components/ProductList';
 import { storeRange, getRange, storeLocation } from '../../../utils/storage';
 import { useQuery } from '@tanstack/react-query';
-import reactNativeAndroidLocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
 
 const width = Dimensions.get('window').width
 
@@ -59,41 +58,6 @@ const Main = props => {
   }
 
   useEffect(() => {
-    if(Platform.OS === 'android') {
-      reactNativeAndroidLocationServicesDialogBox.checkLocationServicesIsEnabled({
-        message: "<h2>Localização desativada</h2>O aplicativo precisa da localização do dispositivo ativa",
-        ok: "Ativar",
-        cancel: "Cancelar",
-        enableHighAccuracy: true,
-        showDialog: true,
-
-        openLocationServices: true,
-        preventOutSideTouch: false,
-        preventBackClick: false,
-        providerListener: false
-    }).then(function(success) {
-        console.log(success)
-        Geolocation.getCurrentPosition(
-          async (position) => {
-              console.log(position.coords)
-              const coords = {
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude
-              }
-
-          await storeLocation(coords)
-        },
-        error => console.log(error, 'erro na lib de pegar locali'),
-        {
-          enableHighAccuracy: true,
-          timeout: 2000000,
-          maximumAge: 3600000
-        }
-        )
-    }).catch((error) => {
-        console.log(error.message, 'erro na lib de ativar');
-    });
-    }
 
     getLocationUser()
   }, [])
