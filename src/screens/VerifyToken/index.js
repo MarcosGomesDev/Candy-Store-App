@@ -1,19 +1,19 @@
 
-import React, { createRef, useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput,
-KeyboardAvoidingView } from 'react-native';
+import React, {useRef, useState, useEffect} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, TextInput} from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/modules/toast/actions';
-
-import Container from '../../components/Container'
+import { api } from '../../services/api';
+import Container from '../../components/core/Container'
 import Colors from '../../styles/Colors';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import { heightPercent } from '../../utils/dimensions';
 
 const VerifyToken = ({route}) => {
     let email = route.params
+    console.log(email)
     const dispatch = useDispatch()
     const navigation = useNavigation()
     const defaultCountDown = 30
@@ -64,13 +64,13 @@ const VerifyToken = ({route}) => {
 
     const sendToken = async () => {
         if(token.length === 6) {
-            try {
-                const response = await api.post('/verify-token', {params: {email: email}}, {token: token})
-                dispatch(showToast(response.data, 'success', 'done'))
+            
+                await api.verifyUserTokenPasswordReset(email, token).then((data) => {
+                    dispatch(showToast(data, 'success', 'done'))
                 navigation.navigate('ResetPassword', token)
-            } catch (error) {
-                dispatch(showToast(error.response.data, 'error', 'error'))
-            }
+                }).catch((error) => {
+                    dispatch(showToast(error.response.data, 'error', 'error'))
+                })
         } else {
             dispatch(showToast('token inválido, por favor preencha corretamente', 'error', 'error'))
         }

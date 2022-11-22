@@ -1,64 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import React, {useState} from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 
-import { useNavigation } from '@react-navigation/native';
-
-import {showToast} from '../../../store/modules/toast/actions'
-
-import Container from '../../../components/Container';
-import Input from '../../../components/Input'
-import Colors from '../../../styles/Colors'
-import Icon from 'react-native-vector-icons/MaterialIcons'
-
-import api from '../../../services/api'
+import {showToast} from '../../../store/modules/toast/actions';
+import {useLogin} from '../../../context/LoginProvider';
+import {removeData} from '../../../utils/storage';
+import {useNavigation} from '@react-navigation/native';
+import {URL} from '@env'
+import Container from '../../../components/core/Container';
+import Form from '../../../components/FormProduct';
+import Colors from '../../../styles/Colors';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../../services/api';
 
 const EditProduct = ({route}) => {
-    const dispatch = useDispatch()
-    const navigation = useNavigation()
     const item = route.params
-    const [name, setName] = useState(item.name)
-    const [price, setPrice] = useState(JSON.stringify(item.price))
+    const dispatch = useDispatch()
+    const queryClient = useQueryClient()
+    const navigation = useNavigation()
+    const {profile, setIsLoggedIn} = useLogin()
 
-    const save = async () => {
-        try {
-            const response = await api.post('')
-        } catch (error) {
-            dispatch(showToast(error.response.data, 'error', 'error'))
+    const {mutate, isLoading} = useMutation((product) => api.editProduct(product, profile.token), {
+    onSuccess: (data) => {
+        queryClient.invalidateQueries(['products-list'])
+        dispatch(showToast(data, 'success', 'done'))
+        navigation.goBack()
+    },
+    onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+            dispatch(showToast(messageError, 'error', 'error'))
+            removeData();
+            setIsLoggedIn(false);
         }
     }
+    })
 
     return (
-        <Container>
+        <Container color='#fff'>
             <View style={styles.header}>
                 <TouchableOpacity
-                    onPress={() => navigation.goBack()}
+                    style={{zIndex: 10, backgroundColor: 'red', height: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10}}
+                    onPress={navigation.goBack}
                 >
-                    <Icon name="arrow-back" size={26} color={Colors.primary} />
+                    <Icon name="arrow-back"
+                        size={26}
+                        color={Colors.primary}
+                    />
                 </TouchableOpacity>
                 <Text style={styles.title}>
                     Editar Produto
                 </Text>
             </View>
-            <KeyboardAwareScrollView
-                extraScrollHeight={15}
-            >
-                <View
-                    style={{alignItems: 'center'}}
-                >
-                    <Input
-                        iconName={'toc'}
-                        value={name}
-                        onChangeText={setName}
-                    />
-                    <Input
-                        iconName={'attach-money'}
-                        value={price}
-                        onChangeText={setPrice}
-                    />
-                </View>
-            </KeyboardAwareScrollView>
+            <Form
+                productData={item}
+                titleBtn={isLoading ? (
+                    <ActivityIndicator 
+                        size={24}
+                        color={Colors.white}
+                    />) : 'Salvar'}
+                handleSubmit={(product) => mutate(product)}
+            />
         </Container>
     );
 };
@@ -69,16 +74,16 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.white
     },
     header: {
-        padding: 15,
-        paddingVertical: 20,
+        height: 60,
         flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: Colors.white,
+        alignItems: 'center',
         shadowColor: Colors.black,
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.6,
-        elevation: 1,
-        zIndex: 1
+        elevation: 10,
+        zIndex: 10,
+        width: '100%',
     },
     title: {
         width: '80%',

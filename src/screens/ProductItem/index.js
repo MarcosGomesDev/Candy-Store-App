@@ -1,272 +1,293 @@
+import React, {useState} from 'react';
+import {
+  View,
+  ScrollView,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
 
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Text, StyleSheet, TouchableOpacity,
-FlatList, Image, Dimensions } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
-import { useNavigation } from '@react-navigation/native';
-import {showToast} from '../../store/modules/toast/actions'
-import {useDispatch} from 'react-redux'
-
-import {getData} from '../../utils/storage'
-
-import api from '../../services/api'
-import { useLogin } from '../../context/LoginProvider';
-import Container from '../../components/Container';
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import {useNavigation} from '@react-navigation/native';
+import {showToast} from '../../store/modules/toast/actions';
+import {useDispatch} from 'react-redux';
+import {useLogin} from '../../context/LoginProvider';
+import {api} from '../../services/api';
+import Container from '../../components/core/Container';
+import CarrousselImages from './CarrousselImages';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons'
 import Colors from '../../styles/Colors';
+import RatingProduct from './RatingProduct';
+import useFavoritesList from '../../hooks/useFavoritesList';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { removeData } from '../../utils/storage';
 
+const ProductItem = ({route}) => {
+  const id = route.params;
+  const {profile, setIsLoggedIn} = useLogin();
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const favorites = useFavoritesList()
+  const queryClient = useQueryClient()
 
-const {width} = Dimensions.get('window')
+  const valid = profile.seller === false && favorites?.map(({_id}) => _id).includes(id)
 
-const ProductItem = ({ route }) => {
-  let item = route.params
-  const {profile} = useLogin()
-  const dispatch = useDispatch()
-  const navigation = useNavigation()
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [verify, setVerify] = useState(false)
-  const comments = item.comments
-
-  const images = [
-    {
-      id: 1,
-      image: item.images[0]
-    },
-    {
-      id: 2,
-      image: item.images[1]
-    },
-    {
-      id: 3,
-      image: item.images[2]
-    }
-  ]
-
-  const vefiryExistFavorite = async () => {
-    const user = await getData().then()
-    let verify = await api.get('/user/favorites', {params: {userId: user.id}}).then(res => res.data)
-    const valid = verify.map(({_id}) => _id).includes(item._id)
-    setVerify(valid)
-  }
-
-  useEffect(() => {
-    if(profile.seller === false) {
-      vefiryExistFavorite()
-    }
-  }, [verify])
-
-  const addToFavorites = async (item) => {
-    const user = await getData().then()
-    let favorites = await api.get('/user/favorites', {params: {userId: user.id}})
-      .then(res => res.data)
-      // .catch((error) => dispatch(showToast(error.response.data, 'error', 'error')))
-    const validExist = favorites.map(({_id})=>_id).includes(item)
-
-    try {
-      if(validExist) {
-        await api.delete('/user/favorites/delete', {params: {userId: user.id, productId: item}})
-          .then(res => dispatch(showToast(res.data, 'success', 'done')))
-          .catch((error) => dispatch(showToast(error.response.data, 'error', 'error')))
-      } else {
-        const res = await api.post('/user/favorites/new', {}, {
-          params: {productId: item, userId: user.id}
-        })
-        dispatch(showToast(res.data, 'success', 'favorite'))
+  // RETORNA OS DADOS DO PRODUTO
+    const {data: product, isLoading, isError} = useQuery(['product'], () => api.getProduct(id), {
+      onSuccess: () => console.log('deu certo'),
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
+        }
       }
-    } catch (error) {
-      dispatch(showToast(error.response.data, 'error', 'error'))
-    }
-  }
+    })
 
-  const OnBoardingItem = ({item}) => {
-    return (
-      <Image source={{uri: item.image}} style={styles.image} />
-    )
-  }
-  
+  // ADICIONA O PRODUTO A LISTA DE FAVORITOS
+  const {mutate: addToFavorites} = useMutation(() => api.addFavorites(id, profile.token),
+    {
+      onSuccess: (data) => {
+        dispatch(showToast(data, 'success', 'done'))
+        queryClient.invalidateQueries(["favorites-list"])
+      },
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
+        }
+      }
+    }
+  )
+
+  // REMOVE O PRODUTO A LISTA DE FAVORITOS
+  const {mutate: removeToFavorites} = useMutation(() => api.removeFavorites(id, profile.token),
+    {
+      onSuccess: (data) => {
+        console.log(data)
+        dispatch(showToast(data, 'success', 'done'))
+        queryClient.invalidateQueries(["favorites-list"])
+      },
+      onError: (error) => {
+        const status = error.request.status
+        const messageError = error.response.data
+        console.log(messageError)
+        if(status === 413) {
+          dispatch(showToast(messageError, 'error', 'error'))
+          removeData();
+          setIsLoggedIn(false);
+        }
+      }
+    }
+  )
+
   return (
-    <Container>
+    <Container color={'#fff'}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={{marginTop: 2}}
-          onPress={navigation.goBack}
+          style={styles.btnHeader}
+          onPress={() => navigation.goBack()}
         >
           <Icon name="arrow-back" size={30} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>
-          Produto
-        </Text>
-        {profile.seller === false && (
+        <Text style={styles.title}>Produto</Text>
+        {profile.seller === false ? (
           <TouchableOpacity
-            onPress={() => addToFavorites(item._id)}
-            style={{position: 'absolute', right: 15, top: 13}}
-          >
-            <Icon 
-              name={verify === true ? "favorite" : "favorite-outline"}
+            onPress={() => {valid ? removeToFavorites() : addToFavorites()}}
+            style={styles.btnHeader}>
+            <Icon
+              name={valid ? 'favorite' : 'favorite-outline'}
               size={34}
               color={Colors.primary}
-              />
+            />
           </TouchableOpacity>
-        )}
+        ) : <View style={styles.btnHeader}></View>}
       </View>
-      <KeyboardAwareScrollView
-        extraScrollHeight={15}
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.productName}>{item.name}</Text>
-          <View style={styles.ratings}>
-            <Icon style={styles.star} name="star" size={24} color={Colors.gold} />
-            <Text style={{fontSize: 14, paddingLeft: 8, color: Colors.black}}>
-              5.0
-            </Text>
-            <Text style={{fontSize: 14, paddingLeft: 8, color: Colors.grey}}>
-              (1120)
-            </Text>
+      {isLoading && (
+          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <ActivityIndicator size="large" color={Colors.primary} />
           </View>
-          <FlatList
-            data={images}
-            style={{width: width, height: 355}}
-            pagingEnabled
-            horizontal
-            onMomentumScrollEnd={(event) => 
-              setActiveIndex(parseInt((event.nativeEvent.contentOffset.x / width) + 0.3))}
-            scrollEventThrottle={16}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item, index) => String(item + index)}
-            renderItem={({item}) => <OnBoardingItem item={item} />}
-          />
-          {
-            item.images.length > 1 ?
-              <View style={styles.dotsContainer}>
-                {
-                  item.images.map((_, i) => (
-                    <View
-                      key={i}
-                      style={[styles.dot, {backgroundColor: i === activeIndex ? Colors.primary : '#d4d4d4'}]}
-                    />
-                  ))
-                }
-              </View>
-            : <></>
-          }
-          <Text style={[styles.price, {marginTop: item.images.length === 1 ? 20 : 0}]}>
-            R$ {item.price}
-          </Text>
-          <View style={styles.detailsContainer}>
-            <Text style={styles.titleDescription}>Descrição</Text>
-            <Text numberOfLines={3} style={styles.description}>Bolo de Doce de Leite com uasduasdhauhfashf 
-            ausgdsauhfahahfs auhfuashfuasfuhauahuvhvhuasfuasbviabib  aufbasubhiaufhiubh</Text>
-          </View>
-          {profile.seller === false && (
-            <View style={styles.vendorContainer}>
-              <Text style={{fontSize: 16, color: Colors.black}}>Vendido por </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Seller', item)}>
-                <Text style={{color: Colors.primary, fontSize: 16, textTransform: 'uppercase'}}>
-                  {item.seller.name}
-                </Text>
-              </TouchableOpacity>
+        )}
+      {product && (
+        <ScrollView showsVerticalScrollIndicator={false}>
+        
+          <>
+            <Text style={styles.productName}>{product.name}</Text>
+            <View style={styles.ratings}>
+              <RatingProduct rating={product.ratingAverage} />
+              <Text style={{fontSize: 14, paddingLeft: 8, color: Colors.grey}}>
+                ({product.rating?.length}) avaliações
+              </Text>
             </View>
-          )}
-          <View style={styles.commentsContainer}>
-            <Text style={styles.commentsTitle}>
-              Comentários
+            <CarrousselImages data={product.images} />
+            <Text
+              style={[
+                styles.price,
+                {marginTop: product.images?.length === 1 ? 20 : 0},
+              ]}>
+              R$ {product.price}
             </Text>
-            {comments.map((result) => (
-              <View key={result => result.id} style={{marginBottom: 10}}>
-                <Text style={{textTransform: 'capitalize', fontWeight: 'bold', color: '#000'}}>
-                  {result.name}
+            <View style={styles.detailsContainer}>
+              <Text style={styles.titleDescription}>Descrição</Text>
+              <Text numberOfLines={3} style={styles.description}>
+                {product.description}
+              </Text>
+            </View>
+            {profile.seller === false && (
+              <View style={styles.vendorContainer}>
+                <Text style={{fontSize: 16, color: Colors.gray, fontWeight: '500'}}>
+                  Vendido por
                 </Text>
-                <Text style={{color: '#000', fontSize: 15}}>
-                  - {result.comment}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SellerStore', product.seller._id)}>
+                  <Text
+                    style={{
+                      color: Colors.primary,
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase',
+                    }}> {product.seller.name}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.commentsContainer}>
+              <Text style={styles.commentsTitle}>Comentários</Text>
+              {product.rating?.slice(0, 2).map((item, index) => (
+                <View key={index} style={{paddingLeft: 15, flexDirection: 'row', marginBottom: 10}}>
+                <Text
+                  style={{color: Colors.primary, fontWeight: 'bold', paddingRight: 10, fontSize: 16}}>
+                  {item.userName}
+                </Text>
+                <Text style={{color: Colors.primary, fontSize: 16}}>
+                  {item.productReview}
                 </Text>
               </View>
-            ))}
-            {/* <View style={{flexDirection: 'row', marginBottom: 10}}>
-              <TextInput
-                placeholder='Comentar'
-                placeholderTextColor="#aaa"
-                multiline={true}
-                style={styles.commentInput}
-                onChangeText={text => setInput(text)}
-              />
-              <TouchableOpacity style={styles.sendCommentBtn}>
-                <Icon name="send" size={24} color={Colors.primary} />
-              </TouchableOpacity>
-            </View> */}
-          </View>
+              ))}
+              {product.rating?.length > 0 && (
+                <TouchableOpacity
+                  style={{marginBottom: 10}}
+                  onPress={() => {navigation.navigate('CommentScreen', product._id)}}
+                >
+                  <Text style={{color: Colors.primary}}>Ver todos os comentários</Text>
+                </TouchableOpacity>
+              )}
+
+              <View
+                style={{
+                  marginVertical: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <TouchableOpacity
+                  style={styles.sendCommentBtn}
+                  onPress={() => navigation.navigate('CommentScreen', product._id)}
+                >
+                  <Text
+                    style={styles.sendCommentBtnText}
+                  >
+                    Avaliar produto
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sendCommentBtn, {marginTop: 30, backgroundColor: Colors.green, flexDirection: 'row'}]}
+                  // onPress={() => navigation.navigate('CommentScreen', product._id)}
+                >
+                  <Icon2 name="whatsapp"size={24} color={Colors.white} style={{paddingRight: 10}} />
+                  <Text
+                    style={styles.sendCommentBtnText}
+                  >
+                    Fale com o vendedor
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
         </ScrollView>
-      </KeyboardAwareScrollView>
+      )}
+      {isError && (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text>Erro ao mostrar este produto!</Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: Colors.primary,
+              width: '90%',
+              height: 55
+            }}
+          >
+            <Text>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    padding: 15,
+    height: 60,
     flexDirection: 'row',
     backgroundColor: Colors.white,
+    alignItems: 'center',
     shadowColor: Colors.black,
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.6,
-    elevation: 9,
-    zIndex: 1,
+    elevation: 10,
+    zIndex: 10,
+  },
+  btnHeader: {
+    marginTop: 2,
+    width: '12.5%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   title: {
     fontSize: 20,
+    textAlign: 'center',
     color: Colors.primary,
     marginTop: 3,
-    paddingLeft: 10
-  },
-  image: {
-    width,
-    height: width,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginHorizontal: 2
+    flex: 1
   },
   price: {
-    color: Colors.black,
+    color: Colors.primary,
     fontSize: 28,
+    fontWeight: 'bold',
     paddingLeft: 20,
-    fontWeight: '300',
   },
   productName: {
     color: Colors.primary,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
     marginTop: 5,
     paddingVertical: 10,
-    paddingLeft: 20
+    paddingLeft: 20,
   },
   ratings: {
     flexDirection: 'row',
     paddingHorizontal: 15,
     marginTop: -5,
-    marginBottom: 10
-  },
-  star: {
-    marginTop: -4
+    marginBottom: 10,
   },
   detailsContainer: {
     paddingLeft: 20,
     paddingRight: 15,
-    marginTop: 10
+    marginTop: 10,
   },
-  titleDescription : {
+  titleDescription: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
-    color: Colors.black
+    color: Colors.primary,
   },
   description: {
     color: Colors.grey,
@@ -276,7 +297,7 @@ const styles = StyleSheet.create({
   vendorContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginTop: 5
+    marginTop: 5,
   },
   commentsContainer: {
     marginTop: 15,
@@ -286,7 +307,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5
+    marginBottom: 5,
   },
   commentInput: {
     flex: 1,
@@ -297,13 +318,21 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingRight: 30,
     marginBottom: 20,
-    color: Colors.primary
+    color: Colors.primary,
   },
   sendCommentBtn: {
-    position: 'absolute',
-    right: 5,
-    top: 10
-  }
+    width: '90%',
+    height: 50,
+    backgroundColor: Colors.primary,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendCommentBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default ProductItem;

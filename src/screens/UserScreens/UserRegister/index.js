@@ -7,7 +7,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import {showToast} from '../../../store/modules/toast/actions'
 import {useDispatch} from 'react-redux'
 
-import Container from '../../../components/Container';
+import Container from '../../../components/core/Container';
 import Colors from '../../../styles/Colors'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import Input from '../../../components/Input';
@@ -82,8 +82,10 @@ const UserRegister = ({navigation}) => {
         try {
             setLoad(true)
             const response = await api.post('/sign-up/user', {name, email, password})
+            console.log(response)
             setLoad(false)
             dispatch(showToast(response.data, 'success', 'person'))
+
             setTimeout(() => {  
                 navigation.navigate('Login')
             }, 2000);
